@@ -13,9 +13,12 @@ export default function About() {
             Warmchain
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <Link href="/#product" className="text-sm text-gray-400 hover:text-white transition-colors">
+            <button 
+              onClick={() => window.location.href = '/#product'}
+              className="text-sm text-gray-400 hover:text-white transition-colors"
+            >
               Product
-            </Link>
+            </button>
             <Link href="/about" className="text-sm text-white font-medium">
               About
             </Link>
@@ -81,11 +84,11 @@ export default function About() {
           
           <div className="space-y-6 text-lg text-gray-400 leading-relaxed">
             <p>
-              I'm Andrey, the founder of Warmchain. I just finished three years in the Air Force as an aircraft mechanic. When I started working on my first startup, I quickly learned what every founder knows: warm intros are everything.
+              I'm Andrey, the founder of Warmchain. I just finished three years in the Israeli Air Force as an aircraft mechanic. When I started working on my first startup, I quickly learned what every founder knows: warm intros are everything.
             </p>
             
             <p>
-              Investors don't respond to cold emails. Cofounders don't join teams they haven't been introduced to. If you want to close anything—capital, customers, partnerships, hires—you need warm intros.
+              Investors don't respond to cold emails. Customers don't take calls from strangers. Cofounders don't join teams they haven't been introduced to. If you want to close anything—capital, customers, partnerships, hires—you need warm intros.
             </p>
             
             <p>
@@ -285,8 +288,8 @@ export default function About() {
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
             <p>© 2026 Warmchain. All rights reserved.</p>
             <div className="flex gap-6">
-              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
-              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <a href="#" className="hover:text-white transition-colors">Privacy</a>
+              <a href="#" className="hover:text-white transition-colors">Terms</a>
             </div>
           </div>
         </div>
