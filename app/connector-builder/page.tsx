@@ -6,83 +6,91 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import AIChat from '@/components/AIChat'
 
-export default function Builder() {
+export default function ConnectorBuilder() {
   const [formData, setFormData] = useState({
     username: '',
-    company_name: '',
-    one_liner: '',
-    stage: '',
-    traction: '',
-    ask: '',
-    team: '',
+    name: '',
+    bio: '',
+    expertise: '',
+    helps_with: '',
+    portfolio: '',
     links: ''
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState(1)
-  const [autoSaved, setAutoSaved] = useState(false)
   const router = useRouter()
 
   const steps = [
-    { number: 1, label: 'Identity', fields: ['username', 'company_name', 'one_liner'] },
-    { number: 2, label: 'Progress', fields: ['stage', 'traction'] },
-    { number: 3, label: 'Ask & Team', fields: ['ask', 'team', 'links'] }
+    { number: 1, label: 'Identity', fields: ['username', 'name', 'bio'] },
+    { number: 2, label: 'Expertise', fields: ['expertise', 'helps_with'] },
+    { number: 3, label: 'Portfolio', fields: ['portfolio', 'links'] }
   ]
 
   const totalFields = Object.keys(formData).length
   const filledFields = Object.values(formData).filter(v => v.trim()).length
   const progress = (filledFields / totalFields) * 100
 
-  useEffect(() => {
-    const checkExistingProfile = async () => {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', user.id)
-          .single()
-        
-        if (profile?.username) {
-          router.push(`/${profile.username}`)
-        }
-      }
-    }
-    checkExistingProfile()
-  }, [router])
+// useEffect(() => {
+//   const checkExistingProfile = async () => {
+//     const supabase = createClient()
+//     const { data: { user } } = await supabase.auth.getUser()
+//     
+//     if (user) {
+//       const { data: profile } = await supabase
+//         .from('connector_profiles')
+//         .select('username')
+//         .eq('user_id', user.id)
+//         .single()
+//       
+//       if (profile?.username) {
+//         router.push(`/connector/${profile.username}`)
+//       }
+//     }
+//   }
+//   checkExistingProfile()
+// }, [router])
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
-    setAutoSaved(false)
   }
+
+  const requiredFields = ['username', 'name', 'bio', 'expertise', 'helps_with'] as const
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError('')
-    setLoading(true)
 
+    // Validate required fields and jump to first incomplete step
+    const firstMissing = requiredFields.find(f => !formData[f].trim())
+    if (firstMissing) {
+      const step = steps.find(s => s.fields.includes(firstMissing))
+      if (step) setCurrentStep(step.number)
+      setError('Please complete all required fields.')
+      return
+    }
+
+    setLoading(true)
     try {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
 
       if (!user) throw new Error('Not authenticated')
 
-        const { error: insertError } = await supabase
-        .from('profiles')
+      const { error: insertError } = await supabase
+        .from('connector_profiles')
         .insert([{
           user_id: user.id,
-          user_type: 'founder',  // ← ДОБАВИЛИ!
           ...formData
         }])
 
       if (insertError) throw insertError
 
-      router.push(`/${formData.username}`)
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+      router.push('/dashboard')
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      setError(message)
     } finally {
       setLoading(false)
     }
@@ -91,12 +99,11 @@ export default function Builder() {
   const getCharLimit = (field: string) => {
     const limits: Record<string, number> = {
       username: 30,
-      company_name: 50,
-      one_liner: 100,
-      stage: 50,
-      traction: 200,
-      ask: 300,
-      team: 200,
+      name: 50,
+      bio: 200,
+      expertise: 150,
+      helps_with: 200,
+      portfolio: 300,
       links: 200
     }
     return limits[field] || 500
@@ -104,30 +111,26 @@ export default function Builder() {
 
   const getPlaceholder = (field: string) => {
     const placeholders: Record<string, string> = {
-      username: 'yourcompany',
-      company_name: 'Warmchain',
-      one_liner: 'Link-in-bio for founders to get warm intros',
-      stage: 'Pre-seed, building MVP',
-      traction: '16 founders validated, shipping in 2 weeks',
-      ask: 'Seed round: $500k at $5M cap. Looking for angels who invest in B2B SaaS',
-      team: 'Solo founder (ex-Air Force), seeking technical cofounder',
-      links: 'https://warmchain.com, https://twitter.com/warmchain'
+      username: 'sarahchen',
+      name: 'Sarah Chen',
+      bio: 'Angel investor, ex-VP Product at Stripe. Helping early-stage B2B SaaS founders.',
+      expertise: 'B2B SaaS, Pre-seed to Series A, Product-market fit',
+      helps_with: 'Investor intros, product advice, hiring first PMs, GTM strategy',
+      portfolio: 'Helped 15+ founders raise seed rounds. Portfolio: Acme ($2M seed), DevFlow ($1.5M seed)',
+      links: 'https://twitter.com/sarahchen, https://linkedin.com/in/sarahchen'
     }
     return placeholders[field] || ''
   }
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
-      {/* Background Elements */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff05_1px,transparent_1px),linear-gradient(to_bottom,#ffffff05_1px,transparent_1px)] bg-[size:4rem_4rem]"></div>
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black"></div>
       
-      {/* Chaotic Orbs */}
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] orb-chaos-1"></div>
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-green-500/10 rounded-full blur-[120px] orb-chaos-2"></div>
       <div className="absolute top-1/2 right-1/3 w-80 h-80 bg-teal-500/10 rounded-full blur-[100px] orb-chaos-3"></div>
 
-      {/* Navigation */}
       <nav className="relative z-10 border-b border-white/10 bg-black/50 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <Link href="/" className="text-xl font-semibold tracking-tight hover:text-emerald-400 transition-colors">
@@ -141,9 +144,7 @@ export default function Builder() {
         </div>
       </nav>
 
-      {/* Main Content */}
       <div className="relative z-10 max-w-4xl mx-auto px-6 py-16">
-        {/* Header */}
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 backdrop-blur-xl mb-6">
             <span className="relative flex h-2 w-2">
@@ -159,15 +160,14 @@ export default function Builder() {
             Create your
             <br />
             <span className="bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent">
-              startup profile
+              connector profile
             </span>
           </h1>
           <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-            Fill out 7 fields. Get a shareable link. Start getting better warm intros.
+            Help founders succeed. Receive structured intro requests. Build your reputation.
           </p>
         </div>
 
-        {/* Progress Bar */}
         <div className="mb-12">
           <div className="h-2 bg-white/5 rounded-full overflow-hidden">
             <div 
@@ -179,7 +179,6 @@ export default function Builder() {
           </div>
         </div>
 
-        {/* Step Indicators */}
         <div className="flex justify-between mb-12">
           {steps.map((step) => (
             <button
@@ -209,19 +208,17 @@ export default function Builder() {
           ))}
         </div>
 
-        {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Step 1: Identity */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Username */}
               <div className="space-y-2">
                 <label htmlFor="username" className="block text-sm font-medium text-gray-300">
                   Username <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
                   <div className="absolute left-6 top-1/2 -translate-y-1/2 text-gray-500 font-mono">
-                    warmchain.com/
+                    warmchain.com/connector/
                   </div>
                   <input
                     id="username"
@@ -232,7 +229,7 @@ export default function Builder() {
                     onBlur={() => setFocusedField(null)}
                     maxLength={getCharLimit('username')}
                     required
-                    className={`w-full pl-48 pr-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-mono ${
+                    className={`w-full pl-64 pr-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 font-mono ${
                       focusedField === 'username'
                         ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
                         : 'border-white/10 hover:border-white/20'
@@ -246,210 +243,171 @@ export default function Builder() {
                     focusedField === 'username' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
-                <p className="text-xs text-gray-500">Your unique link. Lowercase, numbers, and hyphens only.</p>
               </div>
 
-              {/* Company Name */}
               <div className="space-y-2">
-                <label htmlFor="company_name" className="block text-sm font-medium text-gray-300">
-                  Company Name <span className="text-emerald-400">*</span>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+                  Full Name <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
                   <input
-                    id="company_name"
+                    id="name"
                     type="text"
-                    value={formData.company_name}
-                    onChange={(e) => handleChange('company_name', e.target.value)}
-                    onFocus={() => setFocusedField('company_name')}
+                    value={formData.name}
+                    onChange={(e) => handleChange('name', e.target.value)}
+                    onFocus={() => setFocusedField('name')}
                     onBlur={() => setFocusedField(null)}
-                    maxLength={getCharLimit('company_name')}
+                    maxLength={getCharLimit('name')}
                     required
                     className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 ${
-                      focusedField === 'company_name'
+                      focusedField === 'name'
                         ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
                         : 'border-white/10 hover:border-white/20'
                     }`}
-                    placeholder={getPlaceholder('company_name')}
+                    placeholder={getPlaceholder('name')}
                   />
                   <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs text-gray-500">
-                    {formData.company_name.length}/{getCharLimit('company_name')}
+                    {formData.name.length}/{getCharLimit('name')}
                   </div>
                   <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 -z-10 blur-xl transition-opacity duration-300 ${
-                    focusedField === 'company_name' ? 'opacity-100' : 'opacity-0'
+                    focusedField === 'name' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
               </div>
 
-              {/* One-liner */}
               <div className="space-y-2">
-                <label htmlFor="one_liner" className="block text-sm font-medium text-gray-300">
-                  One-liner <span className="text-emerald-400">*</span>
+                <label htmlFor="bio" className="block text-sm font-medium text-gray-300">
+                  Bio <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
-                  <input
-                    id="one_liner"
-                    type="text"
-                    value={formData.one_liner}
-                    onChange={(e) => handleChange('one_liner', e.target.value)}
-                    onFocus={() => setFocusedField('one_liner')}
+                  <textarea
+                    id="bio"
+                    value={formData.bio}
+                    onChange={(e) => handleChange('bio', e.target.value)}
+                    onFocus={() => setFocusedField('bio')}
                     onBlur={() => setFocusedField(null)}
-                    maxLength={getCharLimit('one_liner')}
+                    maxLength={getCharLimit('bio')}
                     required
-                    className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 ${
-                      focusedField === 'one_liner'
+                    rows={3}
+                    className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 resize-none ${
+                      focusedField === 'bio'
                         ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
                         : 'border-white/10 hover:border-white/20'
                     }`}
-                    placeholder={getPlaceholder('one_liner')}
+                    placeholder={getPlaceholder('bio')}
                   />
-                  <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs text-gray-500">
-                    {formData.one_liner.length}/{getCharLimit('one_liner')}
+                  <div className="absolute right-6 bottom-4 text-xs text-gray-500">
+                    {formData.bio.length}/{getCharLimit('bio')}
                   </div>
                   <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 -z-10 blur-xl transition-opacity duration-300 ${
-                    focusedField === 'one_liner' ? 'opacity-100' : 'opacity-0'
+                    focusedField === 'bio' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
-                <p className="text-xs text-gray-500">What does your company do? Keep it clear and concise.</p>
+                <p className="text-xs text-gray-500">Who are you? What's your background?</p>
               </div>
             </div>
           )}
 
-          {/* Step 2: Progress */}
+          {/* Step 2: Expertise */}
           {currentStep === 2 && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Stage */}
               <div className="space-y-2">
-                <label htmlFor="stage" className="block text-sm font-medium text-gray-300">
-                  Stage <span className="text-emerald-400">*</span>
+                <label htmlFor="expertise" className="block text-sm font-medium text-gray-300">
+                  Expertise <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
                   <input
-                    id="stage"
+                    id="expertise"
                     type="text"
-                    value={formData.stage}
-                    onChange={(e) => handleChange('stage', e.target.value)}
-                    onFocus={() => setFocusedField('stage')}
+                    value={formData.expertise}
+                    onChange={(e) => handleChange('expertise', e.target.value)}
+                    onFocus={() => setFocusedField('expertise')}
                     onBlur={() => setFocusedField(null)}
-                    maxLength={getCharLimit('stage')}
+                    maxLength={getCharLimit('expertise')}
                     required
                     className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 ${
-                      focusedField === 'stage'
+                      focusedField === 'expertise'
                         ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
                         : 'border-white/10 hover:border-white/20'
                     }`}
-                    placeholder={getPlaceholder('stage')}
+                    placeholder={getPlaceholder('expertise')}
                   />
                   <div className="absolute right-6 top-1/2 -translate-y-1/2 text-xs text-gray-500">
-                    {formData.stage.length}/{getCharLimit('stage')}
+                    {formData.expertise.length}/{getCharLimit('expertise')}
                   </div>
                   <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 -z-10 blur-xl transition-opacity duration-300 ${
-                    focusedField === 'stage' ? 'opacity-100' : 'opacity-0'
+                    focusedField === 'expertise' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
-                <p className="text-xs text-gray-500">Pre-seed? Seed? Series A? Or just building?</p>
+                <p className="text-xs text-gray-500">What industries, stages, or types of startups do you focus on?</p>
               </div>
 
-              {/* Traction */}
               <div className="space-y-2">
-                <label htmlFor="traction" className="block text-sm font-medium text-gray-300">
-                  Traction <span className="text-emerald-400">*</span>
+                <label htmlFor="helps_with" className="block text-sm font-medium text-gray-300">
+                  I Help With <span className="text-emerald-400">*</span>
                 </label>
                 <div className="relative">
                   <textarea
-                    id="traction"
-                    value={formData.traction}
-                    onChange={(e) => handleChange('traction', e.target.value)}
-                    onFocus={() => setFocusedField('traction')}
+                    id="helps_with"
+                    value={formData.helps_with}
+                    onChange={(e) => handleChange('helps_with', e.target.value)}
+                    onFocus={() => setFocusedField('helps_with')}
                     onBlur={() => setFocusedField(null)}
-                    maxLength={getCharLimit('traction')}
+                    maxLength={getCharLimit('helps_with')}
                     required
                     rows={4}
                     className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 resize-none ${
-                      focusedField === 'traction'
+                      focusedField === 'helps_with'
                         ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
                         : 'border-white/10 hover:border-white/20'
                     }`}
-                    placeholder={getPlaceholder('traction')}
+                    placeholder={getPlaceholder('helps_with')}
                   />
                   <div className="absolute right-6 bottom-4 text-xs text-gray-500">
-                    {formData.traction.length}/{getCharLimit('traction')}
+                    {formData.helps_with.length}/{getCharLimit('helps_with')}
                   </div>
                   <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 -z-10 blur-xl transition-opacity duration-300 ${
-                    focusedField === 'traction' ? 'opacity-100' : 'opacity-0'
+                    focusedField === 'helps_with' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
-                <p className="text-xs text-gray-500">Users? Revenue? Validation? What have you built so far?</p>
+                <p className="text-xs text-gray-500">What kinds of intros or help can you provide?</p>
               </div>
             </div>
           )}
 
-          {/* Step 3: Ask & Team */}
+          {/* Step 3: Portfolio */}
           {currentStep === 3 && (
             <div className="space-y-6 animate-fadeIn">
-              {/* Ask */}
               <div className="space-y-2">
-                <label htmlFor="ask" className="block text-sm font-medium text-gray-300">
-                  The Ask <span className="text-emerald-400">*</span>
+                <label htmlFor="portfolio" className="block text-sm font-medium text-gray-300">
+                  Portfolio / Track Record
                 </label>
                 <div className="relative">
                   <textarea
-                    id="ask"
-                    value={formData.ask}
-                    onChange={(e) => handleChange('ask', e.target.value)}
-                    onFocus={() => setFocusedField('ask')}
+                    id="portfolio"
+                    value={formData.portfolio}
+                    onChange={(e) => handleChange('portfolio', e.target.value)}
+                    onFocus={() => setFocusedField('portfolio')}
                     onBlur={() => setFocusedField(null)}
-                    maxLength={getCharLimit('ask')}
-                    required
+                    maxLength={getCharLimit('portfolio')}
                     rows={5}
                     className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 resize-none ${
-                      focusedField === 'ask'
+                      focusedField === 'portfolio'
                         ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
                         : 'border-white/10 hover:border-white/20'
                     }`}
-                    placeholder={getPlaceholder('ask')}
+                    placeholder={getPlaceholder('portfolio')}
                   />
                   <div className="absolute right-6 bottom-4 text-xs text-gray-500">
-                    {formData.ask.length}/{getCharLimit('ask')}
+                    {formData.portfolio.length}/{getCharLimit('portfolio')}
                   </div>
                   <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 -z-10 blur-xl transition-opacity duration-300 ${
-                    focusedField === 'ask' ? 'opacity-100' : 'opacity-0'
+                    focusedField === 'portfolio' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
-                <p className="text-xs text-gray-500">What do you need? Funding? Cofounder? Customers? Be specific.</p>
+                <p className="text-xs text-gray-500">Companies you've helped, successful intros, investments, etc.</p>
               </div>
 
-              {/* Team */}
-              <div className="space-y-2">
-                <label htmlFor="team" className="block text-sm font-medium text-gray-300">
-                  Team
-                </label>
-                <div className="relative">
-                  <textarea
-                    id="team"
-                    value={formData.team}
-                    onChange={(e) => handleChange('team', e.target.value)}
-                    onFocus={() => setFocusedField('team')}
-                    onBlur={() => setFocusedField(null)}
-                    maxLength={getCharLimit('team')}
-                    rows={3}
-                    className={`w-full px-6 py-4 bg-white/5 border rounded-2xl text-white placeholder-gray-500 focus:outline-none transition-all duration-300 resize-none ${
-                      focusedField === 'team'
-                        ? 'border-emerald-500 shadow-[0_0_20px_rgba(52,211,153,0.3)] scale-[1.01]'
-                        : 'border-white/10 hover:border-white/20'
-                    }`}
-                    placeholder={getPlaceholder('team')}
-                  />
-                  <div className="absolute right-6 bottom-4 text-xs text-gray-500">
-                    {formData.team.length}/{getCharLimit('team')}
-                  </div>
-                  <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-emerald-500/20 to-green-500/20 -z-10 blur-xl transition-opacity duration-300 ${
-                    focusedField === 'team' ? 'opacity-100' : 'opacity-0'
-                  }`}></div>
-                </div>
-                <p className="text-xs text-gray-500">Who's building this? Backgrounds, roles, why this team wins.</p>
-              </div>
-
-              {/* Links */}
               <div className="space-y-2">
                 <label htmlFor="links" className="block text-sm font-medium text-gray-300">
                   Links
@@ -477,19 +435,17 @@ export default function Builder() {
                     focusedField === 'links' ? 'opacity-100' : 'opacity-0'
                   }`}></div>
                 </div>
-                <p className="text-xs text-gray-500">Website, Twitter, LinkedIn, GitHub, etc.</p>
+                <p className="text-xs text-gray-500">Twitter, LinkedIn, personal website, etc.</p>
               </div>
             </div>
           )}
 
-          {/* Error Message */}
           {error && (
             <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/20 backdrop-blur-xl animate-shake">
               <p className="text-red-400 text-sm">{error}</p>
             </div>
           )}
 
-          {/* Navigation Buttons */}
           <div className="flex gap-4 pt-6">
             {currentStep > 1 && (
               <button
@@ -532,7 +488,7 @@ export default function Builder() {
                     </>
                   ) : (
                     <>
-                      Create Profile ✨
+                      Create Connector Profile ✨
                       <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                       </svg>
@@ -546,10 +502,8 @@ export default function Builder() {
         </form>
       </div>
 
-      {/* AI Chat */}
       <AIChat />
 
-      {/* Animations */}
       <style jsx>{`
         @keyframes orbChaos1 {
           0%, 100% { transform: translate(0, 0) scale(1); }
