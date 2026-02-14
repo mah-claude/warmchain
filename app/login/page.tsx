@@ -33,17 +33,7 @@ export default function Login() {
       } = await supabase.auth.getUser()
 
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('user_id', user.id)
-          .single()
-
-        if (profile?.username) {
-          router.push(`/${profile.username}`)
-        } else {
-          router.push('/builder')
-        }
+        router.push('/dashboard')
       }
     } catch (err: any) {
       setError(err?.message || 'Invalid email or password')
