@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import AIChat from '@/components/AIChat'
@@ -16,7 +16,8 @@ type Profile = {
   links: string | null
 }
 
-export default function PublicProfile({ params }: { params: { username: string } }) {
+export default function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = use(params) // ← FIX для Next.js 16
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
@@ -27,7 +28,7 @@ export default function PublicProfile({ params }: { params: { username: string }
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
-        .eq('username', params.username)
+        .eq('username', username)
         .single()
 
       if (data) setProfile(data)
@@ -35,7 +36,7 @@ export default function PublicProfile({ params }: { params: { username: string }
     }
 
     fetchProfile()
-  }, [params.username])
+  }, [username])
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
@@ -62,7 +63,7 @@ export default function PublicProfile({ params }: { params: { username: string }
           <div className="text-6xl mb-6">🔍</div>
           <h1 className="text-4xl font-bold mb-4">Profile not found</h1>
           <p className="text-gray-400 mb-8">
-            The profile <span className="text-white font-mono">/{params.username}</span> doesn't exist.
+            The profile <span className="text-white font-mono">/{username}</span> doesn't exist.
           </p>
           <Link 
             href="/"
