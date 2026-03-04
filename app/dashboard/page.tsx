@@ -416,7 +416,10 @@ export default function Dashboard() {
 
       if (founder) setFounderProfile(founder)
       else if (connector) setConnectorProfile(connector)
-      else router.push('/builder')
+      else {
+        const userType = user.user_metadata?.user_type
+        router.push(userType === 'connector' ? '/connector-builder' : '/builder')
+      }
 
       setLoading(false)
     }

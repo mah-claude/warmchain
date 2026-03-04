@@ -4,6 +4,7 @@ import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import AIChat from '@/components/AIChat'
+import { NEEDS_OPTIONS } from '@/lib/types'
 
 type Profile = {
   username: string
@@ -14,6 +15,10 @@ type Profile = {
   ask: string
   team: string | null
   links: string | null
+  needs: string | null
+  mrr: string | null
+  users_count: string | null
+  growth: string | null
 }
 
 export default function PublicProfile({ params }: { params: Promise<{ username: string }> }) {
@@ -76,8 +81,11 @@ export default function PublicProfile({ params }: { params: Promise<{ username: 
     )
   }
 
-  const linksArray = profile.links 
+  const linksArray = profile.links
     ? profile.links.split(',').map(link => link.trim()).filter(Boolean)
+    : []
+  const needsList = profile.needs
+    ? profile.needs.split(',').filter(Boolean).map(v => NEEDS_OPTIONS.find(o => o.value === v)?.label ?? v)
     : []
 
   return (
@@ -156,7 +164,7 @@ export default function PublicProfile({ params }: { params: Promise<{ username: 
               TL;DR
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
-              <div className="space-y-3">
+              <div className="space-y-4">
                 <div className="flex items-start gap-3">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
                   <div>
@@ -164,6 +172,32 @@ export default function PublicProfile({ params }: { params: Promise<{ username: 
                     <div className="text-lg text-gray-300">{profile.stage}</div>
                   </div>
                 </div>
+                {(profile.mrr || profile.users_count || profile.growth) && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Metrics</div>
+                      <div className="flex flex-wrap gap-3">
+                        {profile.mrr && <span className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium">MRR: {profile.mrr}</span>}
+                        {profile.users_count && <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300 text-sm">{profile.users_count} users</span>}
+                        {profile.growth && <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-gray-300 text-sm">{profile.growth} growth</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                {needsList.length > 0 && (
+                  <div className="flex items-start gap-3">
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 mt-2 flex-shrink-0"></div>
+                    <div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Looking for</div>
+                      <div className="flex flex-wrap gap-2">
+                        {needsList.map(n => (
+                          <span key={n} className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{n}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
