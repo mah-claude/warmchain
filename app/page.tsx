@@ -40,6 +40,12 @@ export default function Home() {
               Product
             </button>
             <Link
+              href="/connectors"
+              className="text-sm text-gray-400 hover:text-white transition-colors duration-300 relative after:absolute after:left-0 after:bottom-[-2px] after:h-px after:w-0 after:bg-emerald-400/80 after:transition-all after:duration-300 hover:after:w-full"
+            >
+              Connectors
+            </Link>
+            <Link
               href="/about"
               className="text-sm text-gray-400 hover:text-white transition-colors duration-300 relative after:absolute after:left-0 after:bottom-[-2px] after:h-px after:w-0 after:bg-white/60 after:transition-all after:duration-300 hover:after:w-full"
             >
