@@ -4,113 +4,225 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
-import { Profile, ConnectorProfile, IntroRequest, NEEDS_OPTIONS, HELPS_WITH_OPTIONS } from '@/lib/types'
+import { Profile, ConnectorProfile, IntroRequest, Notification, NEEDS_OPTIONS, HELPS_WITH_OPTIONS } from '@/lib/types'
 
-// ─── Founder Dashboard ───────────────────────────────────────────────────────
+// ─── Shared ───────────────────────────────────────────────────────────────────
+
+function StatCard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
+  return (
+    <div className="p-4 sm:p-5 rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col gap-1">
+      <span className="text-2xl sm:text-3xl font-bold text-emerald-400">{value}</span>
+      <span className="text-sm font-medium text-white">{label}</span>
+      {sub && <span className="text-xs text-gray-500">{sub}</span>}
+    </div>
+  )
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const cls: Record<string, string> = {
+    pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+    accepted: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    declined: 'bg-red-500/10 text-red-400 border-red-500/20',
+  }
+  return (
+    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium border ${cls[status] ?? cls.pending}`}>
+      {status}
+    </span>
+  )
+}
+
+function NotifBell({ count }: { count: number }) {
+  if (count === 0) return null
+  return (
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-black text-xs font-bold">
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
+// ─── Founder Dashboard ────────────────────────────────────────────────────────
 
 function FounderDashboard({ profile }: { profile: Profile }) {
   const router = useRouter()
   const [requests, setRequests] = useState<(IntroRequest & { connector_name?: string })[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [profileUrl, setProfileUrl] = useState('')
+  const [viewCount, setViewCount] = useState(0)
+  const [copied, setCopied] = useState(false)
+  const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => {
-    setProfileUrl(`${window.location.origin}/${profile.username}`)
+    setProfileUrl(`${window.location.origin}/f/${profile.username}`)
     const load = async () => {
       const supabase = createClient()
+
+      // Requests
       const { data: reqs } = await supabase
-        .from('intro_requests')
-        .select('*')
+        .from('intro_requests').select('*')
         .eq('founder_username', profile.username)
         .order('created_at', { ascending: false })
 
       if (reqs && reqs.length > 0) {
         const usernames = reqs.map((r: IntroRequest) => r.connector_username)
         const { data: connectors } = await supabase
-          .from('connector_profiles')
-          .select('username, name')
-          .in('username', usernames)
-
+          .from('connector_profiles').select('username, name').in('username', usernames)
         const nameMap: Record<string, string> = {}
         connectors?.forEach((c: { username: string; name: string }) => { nameMap[c.username] = c.name })
-
         setRequests(reqs.map((r: IntroRequest) => ({ ...r, connector_name: nameMap[r.connector_username] })))
       } else {
         setRequests([])
+      }
+
+      // Profile views
+      const { count } = await supabase
+        .from('profile_views').select('id', { count: 'exact', head: true })
+        .eq('username', profile.username).eq('profile_type', 'founder')
+      setViewCount(count ?? 0)
+
+      // Notifications
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: notifs } = await supabase
+          .from('notifications').select('*').eq('user_id', user.id)
+          .order('created_at', { ascending: false }).limit(20)
+        setNotifications(notifs ?? [])
       }
     }
     load()
   }, [profile.username])
 
-  const handleSignOut = async () => {
+  const markNotifsRead = async () => {
+    const unread = notifications.filter(n => !n.read).map(n => n.id)
+    if (unread.length === 0) return
     const supabase = createClient()
-    await supabase.auth.signOut()
+    await supabase.from('notifications').update({ read: true }).in('id', unread)
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const handleSignOut = async () => {
+    await createClient().auth.signOut()
     router.push('/')
   }
 
-  const needsList = profile.needs?.split(',').filter(Boolean).map(v =>
-    NEEDS_OPTIONS.find(o => o.value === v)?.label ?? v
-  ) ?? []
-
-  const statusBadge = (status: string) => {
-    const map: Record<string, string> = {
-      pending: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
-      accepted: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      declined: 'bg-red-500/10 text-red-400 border-red-500/20',
-    }
-    return map[status] ?? map.pending
+  const copyLink = () => {
+    navigator.clipboard.writeText(profileUrl)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
+
+  const needsList = profile.needs?.split(',').filter(Boolean).map(v => NEEDS_OPTIONS.find(o => o.value === v)?.label ?? v) ?? []
+  const total = requests.length
+  const accepted = requests.filter(r => r.status === 'accepted').length
+  const acceptanceRate = total > 0 ? Math.round((accepted / total) * 100) : 0
+  const unreadCount = notifications.filter(n => !n.read).length
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-white/10 bg-black/60 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+      {/* Nav */}
+      <nav className="border-b border-white/10 bg-black/70 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
           <Link href="/" className="text-lg font-semibold hover:text-emerald-400 transition-colors">Warmchain</Link>
-          <div className="flex items-center gap-6">
-            <Link href="/connectors" className="text-sm text-gray-400 hover:text-white transition-colors">Browse Connectors</Link>
-            <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">👔 Founder</span>
+          <div className="flex items-center gap-2 sm:gap-5">
+            <Link href="/connectors" className="hidden sm:block text-sm text-gray-400 hover:text-white transition-colors">Browse Connectors</Link>
+            <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded hidden sm:block">👔 Founder</span>
+
+            {/* Notification bell */}
+            <div className="relative">
+              <button
+                onClick={() => { setShowNotifs(v => !v); if (!showNotifs) markNotifsRead() }}
+                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifs && (
+                <div className="absolute right-0 top-10 w-80 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                    <span className="text-sm font-semibold">Notifications</span>
+                    <button onClick={() => setShowNotifs(false)} className="text-gray-500 hover:text-white">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="p-4 text-sm text-gray-500 text-center">No notifications yet</p>
+                    ) : notifications.map(n => (
+                      <div key={n.id} className={`p-4 border-b border-white/5 last:border-0 ${!n.read ? 'bg-white/[0.02]' : ''}`}>
+                        <p className="text-sm font-medium text-white mb-0.5">{n.title}</p>
+                        <p className="text-xs text-gray-400 line-clamp-2">{n.body}</p>
+                        <p className="text-xs text-gray-600 mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button onClick={handleSignOut} className="text-sm text-gray-400 hover:text-white transition-colors">Sign out</button>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <h1 className="text-4xl font-bold mb-1">Dashboard</h1>
-        <p className="text-gray-400 mb-10">Welcome back, {profile.company_name}.</p>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-1">Dashboard</h1>
+          <p className="text-gray-400">Welcome back, {profile.company_name}.</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <StatCard label="Requests Sent" value={total} />
+          <StatCard label="Acceptance Rate" value={`${acceptanceRate}%`} sub={`${accepted} accepted`} />
+          <StatCard label="Profile Views" value={viewCount} />
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile card */}
           <div className="lg:col-span-1">
-            <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02] h-full">
+            <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02] h-full flex flex-col">
               <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-4">Your Profile</p>
-              <h2 className="text-2xl font-bold mb-1">{profile.company_name}</h2>
-              <p className="text-gray-400 text-sm mb-4">{profile.one_liner}</p>
-
-              <div className="space-y-2 mb-5 text-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-500">Stage:</span>
-                  <span className="text-white">{profile.stage}</span>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-xl font-bold text-black flex-shrink-0">
+                  {profile.company_name.charAt(0)}
                 </div>
+                <div className="min-w-0">
+                  <h2 className="font-bold text-lg truncate">{profile.company_name}</h2>
+                  <p className="text-gray-400 text-sm line-clamp-2">{profile.one_liner}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-4 text-sm">
+                <div className="flex items-center gap-2"><span className="text-gray-500">Stage:</span><span>{profile.stage}</span></div>
                 {profile.mrr && <div className="flex items-center gap-2"><span className="text-gray-500">MRR:</span><span className="text-emerald-400 font-medium">{profile.mrr}</span></div>}
-                {profile.users_count && <div className="flex items-center gap-2"><span className="text-gray-500">Users:</span><span className="text-white">{profile.users_count}</span></div>}
-                {profile.growth && <div className="flex items-center gap-2"><span className="text-gray-500">Growth:</span><span className="text-white">{profile.growth}</span></div>}
+                {profile.users_count && <div className="flex items-center gap-2"><span className="text-gray-500">Users:</span><span>{profile.users_count}</span></div>}
+                {profile.growth && <div className="flex items-center gap-2"><span className="text-gray-500">Growth:</span><span>{profile.growth}</span></div>}
               </div>
 
               {needsList.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 mb-5">
+                <div className="flex flex-wrap gap-1.5 mb-4">
                   {needsList.map(n => (
-                    <span key={n} className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{n}</span>
+                    <span key={n} className="px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{n}</span>
                   ))}
                 </div>
               )}
 
-              <div className="space-y-2">
-                <Link href={`/${profile.username}`}
+              <div className="mt-auto space-y-2">
+                <Link href={`/f/${profile.username}`}
                   className="block w-full py-2.5 bg-white text-black font-semibold rounded-xl text-center text-sm hover:bg-emerald-400 transition-all">
                   View Public Profile
                 </Link>
-                <button onClick={() => { navigator.clipboard.writeText(profileUrl); alert('Link copied!') }}
+                <button onClick={copyLink}
                   className="block w-full py-2.5 border border-white/20 text-white font-medium rounded-xl text-center text-sm hover:bg-white/5 transition-all">
-                  Copy Profile Link
+                  {copied ? '✓ Copied!' : 'Copy Profile Link'}
                 </button>
                 <Link href="/connectors"
                   className="block w-full py-2.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-medium rounded-xl text-center text-sm hover:bg-emerald-500/20 transition-all">
@@ -120,39 +232,37 @@ function FounderDashboard({ profile }: { profile: Profile }) {
             </div>
           </div>
 
-          {/* Intro requests */}
+          {/* Requests */}
           <div className="lg:col-span-2">
-            <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
-              <div className="flex items-center justify-between mb-6">
+            <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02]">
+              <div className="flex items-center justify-between mb-5">
                 <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider">Intro Requests</p>
-                <span className="text-xs text-gray-500">{requests.length} total</span>
+                <span className="text-xs text-gray-500">{total} total</span>
               </div>
 
               {requests.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-4xl mb-3">📬</div>
                   <p className="text-gray-400 mb-2">No requests sent yet</p>
-                  <p className="text-sm text-gray-500 mb-5">Find connectors who can help and send your first request.</p>
+                  <p className="text-sm text-gray-500 mb-5">Find connectors who can help you get warm intros.</p>
                   <Link href="/connectors" className="inline-block px-5 py-2.5 bg-emerald-500 text-black font-bold rounded-xl text-sm hover:bg-emerald-400 transition-all">
                     Browse Connectors
                   </Link>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {requests.map(req => (
                     <div key={req.id} className="p-4 rounded-xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all">
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <span className="font-medium text-sm">{req.connector_name ?? req.connector_username}</span>
-                            <span className={`px-2 py-0.5 rounded-full text-xs border ${statusBadge(req.status)}`}>
-                              {req.status}
-                            </span>
+                            <StatusBadge status={req.status} />
                           </div>
-                          <p className="text-xs text-gray-500 truncate">{req.message}</p>
+                          <p className="text-xs text-gray-500 line-clamp-1">{req.message}</p>
+                          <p className="text-xs text-gray-600 mt-1">{new Date(req.created_at).toLocaleDateString()}</p>
                         </div>
-                        <Link href={`/connector/${req.connector_username}`}
-                          className="text-xs text-gray-500 hover:text-emerald-400 transition-colors flex-shrink-0">
+                        <Link href={`/c/${req.connector_username}`} className="text-xs text-gray-500 hover:text-emerald-400 transition-colors flex-shrink-0">
                           View →
                         </Link>
                       </div>
@@ -172,57 +282,96 @@ function FounderDashboard({ profile }: { profile: Profile }) {
 
 function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
   const router = useRouter()
-  const [requests, setRequests] = useState<(IntroRequest & { founder_company?: string; founder_one_liner?: string; founder_stage?: string })[]>([])
+  const [requests, setRequests] = useState<(IntroRequest & { founder_company?: string; founder_one_liner?: string; founder_stage?: string; founder_user_id_val?: string })[]>([])
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState<string | null>(null)
+  const [viewCount, setViewCount] = useState(0)
+  const [showNotifs, setShowNotifs] = useState(false)
 
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
       const { data: reqs } = await supabase
-        .from('intro_requests')
-        .select('*')
+        .from('intro_requests').select('*')
         .eq('connector_username', profile.username)
         .order('created_at', { ascending: false })
 
       if (reqs && reqs.length > 0) {
         const usernames = reqs.map((r: IntroRequest) => r.founder_username)
         const { data: founders } = await supabase
-          .from('profiles')
-          .select('username, company_name, one_liner, stage')
+          .from('profiles').select('username, company_name, one_liner, stage, user_id')
           .in('username', usernames)
-
-        const founderMap: Record<string, { company_name: string; one_liner: string; stage: string }> = {}
-        founders?.forEach((f: { username: string; company_name: string; one_liner: string; stage: string }) => {
-          founderMap[f.username] = f
-        })
-
+        const fMap: Record<string, { company_name: string; one_liner: string; stage: string; user_id: string }> = {}
+        founders?.forEach((f: { username: string; company_name: string; one_liner: string; stage: string; user_id: string }) => { fMap[f.username] = f })
         setRequests(reqs.map((r: IntroRequest) => ({
           ...r,
-          founder_company: founderMap[r.founder_username]?.company_name,
-          founder_one_liner: founderMap[r.founder_username]?.one_liner,
-          founder_stage: founderMap[r.founder_username]?.stage,
+          founder_company: fMap[r.founder_username]?.company_name,
+          founder_one_liner: fMap[r.founder_username]?.one_liner,
+          founder_stage: fMap[r.founder_username]?.stage,
+          founder_user_id_val: fMap[r.founder_username]?.user_id,
         })))
       } else {
         setRequests([])
       }
+
+      // Views
+      const { count } = await supabase
+        .from('profile_views').select('id', { count: 'exact', head: true })
+        .eq('username', profile.username).eq('profile_type', 'connector')
+      setViewCount(count ?? 0)
+
+      // Notifications
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: notifs } = await supabase
+          .from('notifications').select('*').eq('user_id', user.id)
+          .order('created_at', { ascending: false }).limit(20)
+        setNotifications(notifs ?? [])
+      }
+
       setLoading(false)
     }
     load()
   }, [profile.username])
 
+  const markNotifsRead = async () => {
+    const unread = notifications.filter(n => !n.read).map(n => n.id)
+    if (unread.length === 0) return
+    await createClient().from('notifications').update({ read: true }).in('id', unread)
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
   const handleSignOut = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
+    await createClient().auth.signOut()
     router.push('/')
   }
 
-  const updateStatus = async (id: string, status: 'accepted' | 'declined') => {
-    setUpdating(id)
+  const updateStatus = async (req: typeof requests[0], status: 'accepted' | 'declined') => {
+    setUpdating(req.id)
     try {
       const supabase = createClient()
-      await supabase.from('intro_requests').update({ status }).eq('id', id)
-      setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+      await supabase.from('intro_requests').update({ status }).eq('id', req.id)
+      setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status } : r))
+
+      // Notify founder
+      if (req.founder_user_id_val) {
+        await fetch('/api/notify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: req.founder_user_id_val,
+            type: status === 'accepted' ? 'request_accepted' : 'request_declined',
+            title: status === 'accepted'
+              ? `${profile.name} accepted your intro request!`
+              : `${profile.name} declined your intro request`,
+            body: status === 'accepted'
+              ? `${profile.name} is ready to help. Connect with them at warmchain.com/c/${profile.username}`
+              : `${profile.name} couldn't help this time. Keep reaching out to other connectors.`,
+            request_id: req.id,
+          }),
+        })
+      }
     } finally {
       setUpdating(null)
     }
@@ -230,39 +379,92 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
 
   const pending = requests.filter(r => r.status === 'pending')
   const handled = requests.filter(r => r.status !== 'pending')
-
-  const helpsTags = profile.helps_with?.split(',').filter(Boolean).map(v =>
-    HELPS_WITH_OPTIONS.find(o => o.value === v)?.label ?? v
-  ) ?? []
+  const total = requests.length
+  const accepted = requests.filter(r => r.status === 'accepted').length
+  const responded = requests.filter(r => r.status !== 'pending').length
+  const responseRate = total > 0 ? Math.round((responded / total) * 100) : 0
+  const helpsTags = profile.helps_with?.split(',').filter(Boolean).map(v => HELPS_WITH_OPTIONS.find(o => o.value === v)?.label ?? v) ?? []
+  const unreadCount = notifications.filter(n => !n.read).length
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <nav className="border-b border-white/10 bg-black/60 backdrop-blur-xl sticky top-0 z-40">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+      <nav className="border-b border-white/10 bg-black/70 backdrop-blur-xl sticky top-0 z-40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex justify-between items-center">
           <Link href="/" className="text-lg font-semibold hover:text-emerald-400 transition-colors">Warmchain</Link>
-          <div className="flex items-center gap-6">
-            <span className="text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">🤝 Connector</span>
+          <div className="flex items-center gap-2 sm:gap-5">
+            <span className="hidden sm:block text-xs text-gray-500 bg-white/5 px-2 py-1 rounded">🤝 Connector</span>
+
+            <div className="relative">
+              <button
+                onClick={() => { setShowNotifs(v => !v); if (!showNotifs) markNotifsRead() }}
+                className="relative p-2 text-gray-400 hover:text-white transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full bg-emerald-500 text-black text-[10px] font-bold flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {showNotifs && (
+                <div className="absolute right-0 top-10 w-80 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl z-50 overflow-hidden">
+                  <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                    <span className="text-sm font-semibold">Notifications</span>
+                    <button onClick={() => setShowNotifs(false)} className="text-gray-500 hover:text-white">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0
+                      ? <p className="p-4 text-sm text-gray-500 text-center">No notifications yet</p>
+                      : notifications.map(n => (
+                        <div key={n.id} className={`p-4 border-b border-white/5 last:border-0 ${!n.read ? 'bg-white/[0.02]' : ''}`}>
+                          <p className="text-sm font-medium text-white mb-0.5">{n.title}</p>
+                          <p className="text-xs text-gray-400 line-clamp-2">{n.body}</p>
+                          <p className="text-xs text-gray-600 mt-1">{new Date(n.created_at).toLocaleDateString()}</p>
+                        </div>
+                      ))
+                    }
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button onClick={handleSignOut} className="text-sm text-gray-400 hover:text-white transition-colors">Sign out</button>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-6xl mx-auto px-6 py-12">
-        <h1 className="text-4xl font-bold mb-1">Inbox</h1>
-        <p className="text-gray-400 mb-10">Welcome back, {profile.name}.</p>
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-1">Inbox</h1>
+          <p className="text-gray-400">Welcome back, {profile.name}.</p>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 mb-8">
+          <StatCard label="Total Requests" value={total} />
+          <StatCard label="Response Rate" value={`${responseRate}%`} sub={`${responded} responded`} />
+          <StatCard label="Intros Made" value={accepted} />
+        </div>
 
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Profile card */}
           <div className="lg:col-span-1">
-            <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
+            <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col">
               <p className="text-xs font-semibold text-emerald-500 uppercase tracking-wider mb-4">Your Profile</p>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-xl font-bold text-black">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-xl font-bold text-black flex-shrink-0">
                   {profile.name.charAt(0)}
                 </div>
-                <div>
-                  <p className="font-semibold">{profile.name}</p>
-                  <p className="text-xs text-gray-500">{profile.expertise?.split(',').slice(0,2).join(', ')}</p>
+                <div className="min-w-0">
+                  <p className="font-semibold truncate">{profile.name}</p>
+                  <p className="text-xs text-gray-500 truncate">{profile.expertise?.split(',').slice(0, 2).join(', ')}</p>
                 </div>
               </div>
               <p className="text-sm text-gray-400 mb-4 line-clamp-3">{profile.bio}</p>
@@ -273,32 +475,30 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
                   ))}
                 </div>
               )}
-              <div className="grid grid-cols-3 gap-3 pt-4 border-t border-white/10 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-emerald-400">{requests.length}</div>
-                  <div className="text-xs text-gray-500">Total</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-emerald-400">{requests.filter(r => r.status === 'accepted').length}</div>
-                  <div className="text-xs text-gray-500">Accepted</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-emerald-400">{pending.length}</div>
-                  <div className="text-xs text-gray-500">Pending</div>
-                </div>
+
+              <div className="grid grid-cols-3 gap-2 pt-4 border-t border-white/10 text-center mb-4">
+                <div><div className="text-xl font-bold text-emerald-400">{total}</div><div className="text-xs text-gray-500">Total</div></div>
+                <div><div className="text-xl font-bold text-emerald-400">{accepted}</div><div className="text-xs text-gray-500">Accepted</div></div>
+                <div><div className="text-xl font-bold text-yellow-400">{pending.length}</div><div className="text-xs text-gray-500">Pending</div></div>
               </div>
-              <Link href={`/connector/${profile.username}`}
-                className="block w-full mt-4 py-2.5 border border-white/20 text-white font-medium rounded-xl text-center text-sm hover:bg-white/5 transition-all">
-                View Public Profile
-              </Link>
+
+              <div className="space-y-2 mt-auto">
+                <Link href={`/c/${profile.username}`}
+                  className="block w-full py-2.5 bg-white text-black font-semibold rounded-xl text-center text-sm hover:bg-emerald-400 transition-all">
+                  View Public Profile
+                </Link>
+                {viewCount > 0 && (
+                  <p className="text-xs text-gray-600 text-center">{viewCount} profile views</p>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Inbox */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-5">
             {/* Pending */}
-            <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
-              <div className="flex items-center justify-between mb-5">
+            <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02]">
+              <div className="flex items-center justify-between mb-4">
                 <p className="text-xs font-semibold text-yellow-400 uppercase tracking-wider">Pending Requests</p>
                 {pending.length > 0 && (
                   <span className="px-2 py-0.5 rounded-full text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">
@@ -318,10 +518,10 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
                   <p className="text-xs text-gray-500 mt-1">Founders will send structured intro requests here.</p>
                 </div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {pending.map(req => (
-                    <div key={req.id} className="p-5 rounded-xl border border-yellow-500/10 bg-yellow-500/5 hover:border-yellow-500/20 transition-all">
-                      <div className="flex items-start gap-4 mb-3">
+                    <div key={req.id} className="p-4 sm:p-5 rounded-xl border border-yellow-500/10 bg-yellow-500/[0.03] hover:border-yellow-500/20 transition-all">
+                      <div className="flex items-start gap-3 mb-3">
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-black font-bold flex-shrink-0">
                           {(req.founder_company ?? req.founder_username).charAt(0)}
                         </div>
@@ -332,30 +532,26 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
                               <span className="px-2 py-0.5 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">{req.founder_stage}</span>
                             )}
                           </div>
-                          {req.founder_one_liner && (
-                            <p className="text-sm text-gray-400 mt-0.5">{req.founder_one_liner}</p>
-                          )}
+                          {req.founder_one_liner && <p className="text-sm text-gray-400 mt-0.5 line-clamp-1">{req.founder_one_liner}</p>}
                         </div>
-                        <Link href={`/${req.founder_username}`} target="_blank"
+                        <Link href={`/f/${req.founder_username}`} target="_blank"
                           className="text-xs text-gray-500 hover:text-emerald-400 transition-colors flex-shrink-0">
-                          View profile →
+                          Profile →
                         </Link>
                       </div>
-
                       <div className="mb-4 p-3 rounded-lg bg-white/5 border border-white/10">
                         <p className="text-sm text-gray-300 leading-relaxed">"{req.message}"</p>
                       </div>
-
                       <div className="flex gap-2">
                         <button
-                          onClick={() => updateStatus(req.id, 'accepted')}
+                          onClick={() => updateStatus(req, 'accepted')}
                           disabled={updating === req.id}
                           className="flex-1 py-2.5 bg-emerald-500 text-black font-bold rounded-lg text-sm hover:bg-emerald-400 transition-all disabled:opacity-50"
                         >
                           {updating === req.id ? '…' : '✓ Accept'}
                         </button>
                         <button
-                          onClick={() => updateStatus(req.id, 'declined')}
+                          onClick={() => updateStatus(req, 'declined')}
                           disabled={updating === req.id}
                           className="flex-1 py-2.5 border border-white/20 text-gray-300 rounded-lg text-sm hover:bg-white/5 transition-all disabled:opacity-50"
                         >
@@ -368,20 +564,21 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
               )}
             </div>
 
-            {/* Handled */}
+            {/* History */}
             {handled.length > 0 && (
-              <div className="p-6 rounded-2xl border border-white/10 bg-white/[0.02]">
+              <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02]">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-4">History</p>
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {handled.map(req => (
-                    <div key={req.id} className="flex items-center justify-between p-4 rounded-xl bg-white/[0.02] border border-white/10">
-                      <div>
+                    <div key={req.id} className="flex items-center justify-between p-3.5 rounded-xl bg-white/[0.02] border border-white/10">
+                      <div className="min-w-0">
                         <span className="font-medium text-sm">{req.founder_company ?? req.founder_username}</span>
                         <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{req.message}</p>
                       </div>
-                      <span className={`px-2.5 py-1 rounded-full text-xs border ml-3 flex-shrink-0 ${req.status === 'accepted' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                        {req.status}
-                      </span>
+                      <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+                        <span className="text-xs text-gray-600">{new Date(req.created_at).toLocaleDateString()}</span>
+                        <StatusBadge status={req.status} />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -406,7 +603,6 @@ export default function Dashboard() {
     const load = async () => {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
-
       if (!user) { router.push('/login'); return }
 
       const [{ data: founder }, { data: connector }] = await Promise.all([
@@ -420,7 +616,6 @@ export default function Dashboard() {
         const userType = user.user_metadata?.user_type
         router.push(userType === 'connector' ? '/connector-builder' : '/builder')
       }
-
       setLoading(false)
     }
     load()

@@ -38,7 +38,7 @@ export default function Builder() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
       const { data } = await supabase.from('profiles').select('username').eq('user_id', user.id).single()
-      if (data?.username) router.push(`/${data.username}`)
+      if (data?.username) router.push(`/f/${data.username}`)
     }
     check()
   }, [router])

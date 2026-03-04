@@ -132,7 +132,7 @@ export default function Connectors() {
                     </div>
                     <div>
                       <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors">{connector.name}</h3>
-                      <p className="text-sm text-gray-500">warmchain.com/connector/{connector.username}</p>
+                      <p className="text-sm text-gray-500">warmchain.com/c/{connector.username}</p>
                     </div>
                   </div>
 
@@ -161,12 +161,12 @@ export default function Connectors() {
                   )}
 
                   <div className="mt-auto pt-4 flex gap-2">
-                    <Link href={`/connector/${connector.username}`}
+                    <Link href={`/c/${connector.username}`}
                       className="flex-1 text-center py-2 text-sm border border-white/20 text-gray-300 rounded-lg hover:bg-white/5 transition-all">
                       View Profile
                     </Link>
                     {isFounder ? (
-                      <Link href={`/connector/${connector.username}?request=1`}
+                      <Link href={`/c/${connector.username}?request=1`}
                         className="flex-1 text-center py-2 text-sm bg-emerald-500 text-black font-semibold rounded-lg hover:bg-emerald-400 transition-all">
                         Request Intro
                       </Link>

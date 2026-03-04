@@ -224,17 +224,44 @@ export default function Home() {
                   ))}
                 </ul>
               </div>
+              {/* Mockup: Profile builder */}
               <div className="relative">
-                <div className="relative aspect-[4/3] rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-900 to-black p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)] transition-all duration-500 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)]">
-                  <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff06_1px,transparent_1px),linear-gradient(to_bottom,#ffffff06_1px,transparent_1px)] bg-[size:2rem_2rem] rounded-2xl"></div>
-                  <div className="relative space-y-4">
-                    <div className="h-8 bg-white/5 rounded w-3/4 animate-pulse"></div>
-                    <div className="h-4 bg-white/5 rounded w-full"></div>
-                    <div className="h-4 bg-white/5 rounded w-5/6"></div>
-                    <div className="h-32 bg-white/5 rounded mt-8"></div>
-                    <div className="flex gap-2">
-                      <div className="h-10 bg-emerald-500/20 rounded flex-1 animate-pulse"></div>
-                      <div className="h-10 bg-white/5 rounded w-24"></div>
+                <div className="relative rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden">
+                  {/* Browser bar */}
+                  <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border-b border-white/10">
+                    <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60"/><div className="w-3 h-3 rounded-full bg-yellow-500/60"/><div className="w-3 h-3 rounded-full bg-green-500/60"/></div>
+                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.com/builder</div>
+                  </div>
+                  <div className="p-6 space-y-4">
+                    <div className="flex gap-2 mb-2">
+                      {['Identity','Progress','The Ask'].map((s, i) => (
+                        <span key={s} className={`px-3 py-1 rounded-lg text-xs font-medium ${i === 1 ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-gray-500'}`}>{i+1} {s}</span>
+                      ))}
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1.5">Stage</p>
+                      <div className="flex items-center justify-between px-3 py-2.5 bg-white/5 border border-emerald-500/40 rounded-lg text-sm shadow-[0_0_12px_rgba(52,211,153,0.15)]">
+                        <span className="text-white">Seed</span>
+                        <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-1.5">Traction</p>
+                      <div className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-sm text-gray-300 leading-relaxed">
+                        150 paying users, $8k MRR, growing 25% MoM
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[['MRR','$8k'],['Users','150'],['Growth','25% MoM']].map(([l,v]) => (
+                        <div key={l} className="px-2.5 py-2 bg-white/5 border border-white/10 rounded-lg">
+                          <p className="text-[10px] text-gray-500">{l}</p>
+                          <p className="text-sm font-medium text-emerald-400">{v}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <div className="px-4 py-2 border border-white/15 rounded-lg text-xs text-gray-400">← Back</div>
+                      <div className="flex-1 py-2 bg-white text-black rounded-lg text-xs font-bold text-center">Continue →</div>
                     </div>
                   </div>
                 </div>
@@ -257,24 +284,31 @@ export default function Home() {
                   warmchain.com/airbnb
                 </div>
               </div>
+              {/* Mockup: Public profile */}
               <div className="relative md:order-1">
-                <div className="relative aspect-[4/3] rounded-2xl border border-white/10 bg-gradient-to-br from-emerald-900/20 to-black p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)] transition-all duration-500 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(52,211,153,0.08)]">
-                  <div className="space-y-6">
-                    <div className="p-4 rounded-lg bg-white/[0.04] border border-white/10">
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-full bg-emerald-500/20"></div>
-                        <div className="h-4 bg-white/10 rounded w-32"></div>
+                <div className="relative rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(52,211,153,0.08)] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border-b border-white/10">
+                    <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60"/><div className="w-3 h-3 rounded-full bg-yellow-500/60"/><div className="w-3 h-3 rounded-full bg-green-500/60"/></div>
+                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.com/f/acmeinc</div>
+                  </div>
+                  <div className="p-6">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs mb-3">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"/>Startup Profile
+                    </div>
+                    <h3 className="text-xl font-bold mb-1">AcmeInc</h3>
+                    <p className="text-gray-400 text-sm mb-4">B2B SaaS that automates compliance for fintechs</p>
+                    <div className="flex gap-2 mb-5 flex-wrap">
+                      {[['Seed','emerald'],['$8k MRR','emerald'],['150 users','gray'],['25% MoM','gray']].map(([v,c]) => (
+                        <span key={v} className={`px-3 py-1 rounded-full text-xs font-medium ${c === 'emerald' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-white/5 text-gray-400 border border-white/10'}`}>{v}</span>
+                      ))}
+                    </div>
+                    <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/10 to-transparent border border-emerald-500/20">
+                      <p className="text-xs text-emerald-400 font-semibold uppercase tracking-wider mb-2">⚡ The Ask</p>
+                      <p className="text-sm text-white leading-relaxed">Raising $1.5M pre-seed. Looking for angels who invest in B2B fintech compliance.</p>
+                      <div className="flex gap-2 mt-3">
+                        <span className="px-2.5 py-1 rounded-full text-xs bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">Funding</span>
+                        <span className="px-2.5 py-1 rounded-full text-xs bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">Customers</span>
                       </div>
-                      <div className="h-3 bg-white/5 rounded w-full mb-2"></div>
-                      <div className="h-3 bg-white/5 rounded w-4/5"></div>
-                    </div>
-                    <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                      <div className="h-4 bg-emerald-500/20 rounded w-2/3 mb-2"></div>
-                      <div className="h-3 bg-emerald-500/10 rounded w-full"></div>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="h-10 bg-white/5 rounded flex-1"></div>
-                      <div className="h-10 bg-emerald-500/20 rounded w-24 animate-pulse"></div>
                     </div>
                   </div>
                 </div>
@@ -310,39 +344,48 @@ export default function Home() {
                   </div>
                 </div>
               </div>
+              {/* Mockup: Connector inbox */}
               <div className="relative">
-                <div className="relative aspect-[4/3] rounded-2xl border border-white/10 bg-gradient-to-br from-zinc-900 to-black p-8 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden transition-all duration-500 hover:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.6),0_0_0_1px_rgba(255,255,255,0.08)]">
-                  <div className="absolute top-4 right-4 flex gap-2">
-                    <div className="w-3 h-3 rounded-full bg-red-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-yellow-500/50"></div>
-                    <div className="w-3 h-3 rounded-full bg-green-500/50"></div>
+                <div className="relative rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden">
+                  <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border-b border-white/10">
+                    <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60"/><div className="w-3 h-3 rounded-full bg-yellow-500/60"/><div className="w-3 h-3 rounded-full bg-green-500/60"/></div>
+                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.com/dashboard</div>
                   </div>
-                  <div className="mt-8 space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-emerald-500 to-green-600"></div>
+                  <div className="p-5">
+                    <div className="flex items-center justify-between mb-4">
                       <div>
-                        <div className="h-4 bg-white/10 rounded w-32 mb-2"></div>
-                        <div className="h-3 bg-white/5 rounded w-48"></div>
+                        <p className="font-bold">Inbox</p>
+                        <p className="text-xs text-gray-500">Welcome back, Sarah.</p>
                       </div>
+                      <span className="px-2 py-1 rounded-full text-xs bg-yellow-500/10 text-yellow-400 border border-yellow-500/20">2 pending</span>
                     </div>
-                    <div className="h-px bg-white/10 my-6"></div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
-                        <div className="h-3 bg-white/5 rounded flex-1"></div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
-                        <div className="h-3 bg-white/5 rounded flex-1"></div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-1 rounded-full bg-emerald-500"></div>
-                        <div className="h-3 bg-white/5 rounded w-3/4"></div>
-                      </div>
+                    <div className="grid grid-cols-3 gap-2 mb-4">
+                      {[['4','Total'],['75%','Response'],['3','Accepted']].map(([v,l]) => (
+                        <div key={l} className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-center">
+                          <p className="text-lg font-bold text-emerald-400">{v}</p>
+                          <p className="text-[10px] text-gray-500">{l}</p>
+                        </div>
+                      ))}
                     </div>
-                    <div className="mt-6 p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-                      <div className="h-3 bg-emerald-500/20 rounded w-2/3"></div>
-                    </div>
+                    {[
+                      { co: 'AcmeInc', stage: 'Seed', msg: '"Looking for investor intros for our $1.5M round..."' },
+                      { co: 'DevFlow', stage: 'Pre-seed', msg: '"Need help with customer intros in fintech..."' },
+                    ].map((r, i) => (
+                      <div key={i} className="p-3.5 rounded-xl border border-yellow-500/10 bg-yellow-500/[0.03] mb-2.5">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-black text-xs font-bold">{r.co[0]}</div>
+                            <span className="text-sm font-semibold">{r.co}</span>
+                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-white/5 text-gray-500 border border-white/10">{r.stage}</span>
+                          </div>
+                        </div>
+                        <p className="text-xs text-gray-400 mb-2.5 pl-9">{r.msg}</p>
+                        <div className="flex gap-2 pl-9">
+                          <div className="flex-1 py-1.5 bg-emerald-500 text-black rounded-lg text-xs font-bold text-center">✓ Accept</div>
+                          <div className="flex-1 py-1.5 border border-white/15 text-gray-400 rounded-lg text-xs text-center">✕ Decline</div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -475,8 +518,8 @@ export default function Home() {
           <div className="pt-8 border-t border-white/[0.06] flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
             <p>© 2026 Warmchain. All rights reserved.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition-colors duration-300">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors duration-300">Terms</a>
+              <Link href="/privacy" className="hover:text-white transition-colors duration-300">Privacy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors duration-300">Terms</Link>
             </div>
           </div>
         </div>

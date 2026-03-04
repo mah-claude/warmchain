@@ -40,6 +40,17 @@ export type IntroRequest = {
   created_at: string
 }
 
+export type Notification = {
+  id: string
+  user_id: string
+  type: 'new_request' | 'request_accepted' | 'request_declined'
+  title: string
+  body: string
+  read: boolean
+  request_id: string | null
+  created_at: string
+}
+
 export function getErrorMessage(err: unknown, fallback: string): string {
   if (err instanceof Error) return err.message
   if (typeof err === 'string') return err
