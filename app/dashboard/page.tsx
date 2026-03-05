@@ -354,11 +354,15 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
       await supabase.from('intro_requests').update({ status }).eq('id', req.id)
       setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status } : r))
 
-      // Notify founder
+      // Notify founder (with auth token)
       if (req.founder_user_id_val) {
+        const { data: { session } } = await supabase.auth.getSession()
         await fetch('/api/notify', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+          },
           body: JSON.stringify({
             user_id: req.founder_user_id_val,
             type: status === 'accepted' ? 'request_accepted' : 'request_declined',

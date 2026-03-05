@@ -91,10 +91,14 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
       }]).select('id').single()
       if (error) throw error
 
-      // Notify connector
+      // Notify connector (with auth token)
+      const { data: { session } } = await supabase.auth.getSession()
       await fetch('/api/notify', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { 'Authorization': `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({
           user_id: connectorUserId,
           type: 'new_request',

@@ -14,9 +14,25 @@
 
 ---
 
-## Round 2 — Security & Data (coming next)
+## Round 2 — Security & Data (2026-03-05)
 
-Planned:
-- Auth check on `/api/notify` to prevent unauthenticated notification injection
-- Input validation audit
-- RLS policy verification
+### Fixed
+- **`app/api/notify/route.ts`**: Added authentication check — route now requires a valid `Authorization: Bearer <token>` header. Unauthenticated callers receive 401. Prevents anyone from injecting fake notifications to arbitrary users.
+- **`app/c/[username]/page.tsx`**: Updated `/api/notify` call to include Supabase session access token in Authorization header.
+- **`app/dashboard/page.tsx`**: Updated `/api/notify` call to include Supabase session access token in Authorization header.
+
+### Verified (no changes needed)
+- No `dangerouslySetInnerHTML` or `innerHTML` usage anywhere — no XSS risk.
+- `SUPABASE_SERVICE_ROLE_KEY` only used in server-side API route, never in client code.
+- All `NEXT_PUBLIC_` env vars are safe to expose; no private keys referenced from client components.
+- RLS policies: `notifications` requires `auth.uid() = user_id` for SELECT/UPDATE; `profile_views` open insert by design (anonymous tracking).
+- All form inputs use controlled React state — no raw HTML manipulation.
+
+### Build
+- `npm run build` — 17 routes, zero errors.
+
+---
+
+## Round 3 — UX Polish (coming next)
+
+Planned: empty state review, success messages, loading state audit

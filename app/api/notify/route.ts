@@ -8,6 +8,17 @@ const serviceClient = createClient(
 
 export async function POST(req: NextRequest) {
   try {
+    // Verify caller is authenticated via Bearer token
+    const authHeader = req.headers.get('authorization')
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+    const { data: { user }, error: authError } = await serviceClient.auth.getUser(token)
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { user_id, type, title, body, request_id } = await req.json()
     if (!user_id || !type || !title || !body) {
       return NextResponse.json({ error: 'Missing fields' }, { status: 400 })
