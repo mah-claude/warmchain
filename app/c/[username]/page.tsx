@@ -1,10 +1,10 @@
 'use client'
 
-import { use, useEffect, useState } from 'react'
+import { use, useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
-import { ConnectorProfile, EXPERTISE_OPTIONS, HELPS_WITH_OPTIONS } from '@/lib/types'
+import { ConnectorProfile, HELPS_WITH_OPTIONS } from '@/lib/types'
 
 function Tag({ label, variant = 'default' }: { label: string; variant?: 'default' | 'green' }) {
   return variant === 'green'
@@ -12,8 +12,7 @@ function Tag({ label, variant = 'default' }: { label: string; variant?: 'default
     : <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-gray-300 border border-white/10">{label}</span>
 }
 
-export default function ConnectorPublicProfile({ params }: { params: Promise<{ username: string }> }) {
-  const { username } = use(params)
+function ConnectorProfileInner({ username }: { username: string }) {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -22,9 +21,15 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
   const [copied, setCopied] = useState(false)
   const [viewCount, setViewCount] = useState<number | null>(null)
 
+  // Auth / visitor state
+  const [isOwner, setIsOwner] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
   const [currentFounderUsername, setCurrentFounderUsername] = useState<string | null>(null)
   const [currentFounderUserId, setCurrentFounderUserId] = useState<string | null>(null)
   const [connectorUserId, setConnectorUserId] = useState<string | null>(null)
+
+  // Modal state
   const [showModal, setShowModal] = useState(false)
   const [message, setMessage] = useState('')
   const [sending, setSending] = useState(false)
@@ -36,33 +41,55 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
     const load = async () => {
       const supabase = createClient()
 
-      const { data: cp } = await supabase
-        .from('connector_profiles').select('*').eq('username', username).single()
+      const [cpResult, userResult] = await Promise.all([
+        supabase.from('connector_profiles').select('*').eq('username', username).single(),
+        supabase.auth.getUser(),
+      ])
+
+      const cp = cpResult.data
+      const user = userResult.data.user
 
       if (cp) {
         setProfile(cp)
         setConnectorUserId(cp.user_id)
-        // Track view
-        supabase.from('profile_views').insert([{ username, profile_type: 'connector' }]).then(() => {})
+
+        if (user) {
+          setIsLoggedIn(true)
+
+          // Check if this user owns the connector profile
+          if (cp.user_id === user.id) {
+            setIsOwner(true)
+            // Fetch unread notification count for the owner
+            const { count } = await supabase
+              .from('notifications')
+              .select('id', { count: 'exact', head: true })
+              .eq('user_id', user.id)
+              .eq('read', false)
+            setUnreadCount(count ?? 0)
+          } else {
+            // Check if this user is a founder who can request intros
+            const { data: fp } = await supabase
+              .from('profiles').select('username').eq('user_id', user.id).single()
+            if (fp) {
+              setCurrentFounderUsername(fp.username)
+              setCurrentFounderUserId(user.id)
+              const { data: existing } = await supabase
+                .from('intro_requests').select('id')
+                .eq('founder_user_id', user.id).eq('connector_user_id', cp.user_id).maybeSingle()
+              setAlreadyRequested(!!existing)
+            }
+          }
+        }
+
+        // Track view (fire and forget) — skip for owner
+        if (!user || cp.user_id !== user.id) {
+          supabase.from('profile_views').insert([{ username, profile_type: 'connector' }]).then(() => {})
+        }
         // View count
         const { count } = await supabase
           .from('profile_views').select('id', { count: 'exact', head: true })
           .eq('username', username).eq('profile_type', 'connector')
         setViewCount(count ?? 0)
-      }
-
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user && cp) {
-        const { data: fp } = await supabase
-          .from('profiles').select('username').eq('user_id', user.id).single()
-        if (fp) {
-          setCurrentFounderUsername(fp.username)
-          setCurrentFounderUserId(user.id)
-          const { data: existing } = await supabase
-            .from('intro_requests').select('id')
-            .eq('founder_user_id', user.id).eq('connector_user_id', cp.user_id).maybeSingle()
-          setAlreadyRequested(!!existing)
-        }
       }
 
       setLoading(false)
@@ -119,8 +146,13 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
   }
 
   const handleRequestClick = () => {
-    if (!currentFounderUsername) {
+    if (!isLoggedIn) {
       router.push(`/login?next=/c/${username}?request=1`)
+      return
+    }
+    if (!currentFounderUsername) {
+      // Logged in but not a founder — redirect to dashboard
+      router.push('/dashboard')
       return
     }
     setShowModal(true)
@@ -156,7 +188,26 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
 
   return (
     <div className="min-h-screen bg-black text-white">
-      {/* Modal */}
+      {/* Owner banner */}
+      {isOwner && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4 text-sm">
+            <span className="text-emerald-400 font-medium">
+              👁 This is how founders see your profile
+            </span>
+            <div className="flex items-center gap-3">
+              <Link href="/connector-builder" className="text-emerald-400 hover:text-emerald-300 transition-colors underline underline-offset-2 text-xs">
+                Edit profile
+              </Link>
+              <Link href="/dashboard" className="px-3 py-1 bg-emerald-500 text-black text-xs font-bold rounded-lg hover:bg-emerald-400 transition-all">
+                {unreadCount > 0 ? `Inbox (${unreadCount})` : 'Dashboard'}
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Intro request modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-sm">
           <div className="w-full sm:max-w-lg bg-zinc-900 border border-white/10 rounded-t-2xl sm:rounded-2xl p-6 sm:p-8 shadow-2xl">
@@ -217,13 +268,31 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <Link href="/" className="text-lg font-semibold hover:text-emerald-400 transition-colors">Warmchain</Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <button onClick={copyLink} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
-              {copied
-                ? <><svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400 text-xs">Copied!</span></>
-                : <span className="text-xs">Share</span>
-              }
-            </button>
-            <Link href="/connectors" className="text-xs text-gray-400 hover:text-white transition-colors hidden sm:block">← All connectors</Link>
+            {isOwner ? (
+              <>
+                <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors hidden sm:flex">
+                  ← Dashboard
+                  {unreadCount > 0 && (
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-black text-xs font-bold">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </Link>
+                <Link href="/connector-builder" className="px-4 py-2 bg-white/10 border border-white/20 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-white/15 transition-all">
+                  Edit Profile
+                </Link>
+              </>
+            ) : (
+              <>
+                <button onClick={copyLink} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
+                  {copied
+                    ? <><svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400 text-xs">Copied!</span></>
+                    : <span className="text-xs">Share</span>
+                  }
+                </button>
+                <Link href="/connectors" className="text-xs text-gray-400 hover:text-white transition-colors hidden sm:block">← All connectors</Link>
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -248,20 +317,23 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
             </div>
           </div>
 
-          <div className="flex-shrink-0">
-            {alreadyRequested ? (
-              <div className="px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-medium">
-                ✓ Request sent
-              </div>
-            ) : (
-              <button
-                onClick={handleRequestClick}
-                className="px-5 py-2.5 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-all text-sm w-full sm:w-auto"
-              >
-                Request Intro
-              </button>
-            )}
-          </div>
+          {/* Request button — only for non-owners */}
+          {!isOwner && (
+            <div className="flex-shrink-0">
+              {alreadyRequested ? (
+                <div className="px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-medium">
+                  ✓ Request sent
+                </div>
+              ) : (
+                <button
+                  onClick={handleRequestClick}
+                  className="px-5 py-2.5 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-all text-sm w-full sm:w-auto"
+                >
+                  Request Intro
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5 mb-5">
@@ -307,7 +379,8 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
           </div>
         )}
 
-        {!currentFounderUsername && (
+        {/* CTA for logged-out visitors only */}
+        {!isLoggedIn && (
           <div className="p-8 rounded-2xl bg-gradient-to-br from-emerald-500/10 to-green-500/5 border border-emerald-500/20 text-center">
             <p className="text-lg font-semibold mb-2">Want {profile.name.split(' ')[0]}'s help?</p>
             <p className="text-gray-400 mb-5 text-sm">Create a founder profile and send a structured intro request in minutes.</p>
@@ -318,5 +391,18 @@ export default function ConnectorPublicProfile({ params }: { params: Promise<{ u
         )}
       </main>
     </div>
+  )
+}
+
+export default function ConnectorPublicProfile({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = use(params)
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ConnectorProfileInner username={username} />
+    </Suspense>
   )
 }

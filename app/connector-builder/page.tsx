@@ -26,6 +26,7 @@ export default function ConnectorBuilder() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [focused, setFocused] = useState('')
+  const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -33,8 +34,20 @@ export default function ConnectorBuilder() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const { data } = await supabase.from('connector_profiles').select('username').eq('user_id', user.id).single()
-      if (data?.username) router.push('/dashboard')
+      const { data } = await supabase.from('connector_profiles').select('*').eq('user_id', user.id).single()
+      if (data) {
+        // Prefill form for editing
+        setIsEditing(true)
+        setFormData({
+          username: data.username ?? '',
+          name: data.name ?? '',
+          bio: data.bio ?? '',
+          expertise: data.expertise ? data.expertise.split(',').filter(Boolean) : [],
+          helps_with: data.helps_with ? data.helps_with.split(',').filter(Boolean) : [],
+          portfolio: data.portfolio ?? '',
+          links: data.links ?? '',
+        })
+      }
     }
     check()
   }, [router])
@@ -61,7 +74,7 @@ export default function ConnectorBuilder() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-      const { error: err } = await supabase.from('connector_profiles').insert([{
+      const profileData = {
         user_id: user.id,
         user_type: 'connector',
         username: formData.username,
@@ -71,9 +84,12 @@ export default function ConnectorBuilder() {
         helps_with: formData.helps_with.join(','),
         portfolio: formData.portfolio,
         links: formData.links,
-      }])
+      }
+      const { error: err } = isEditing
+        ? await supabase.from('connector_profiles').update(profileData).eq('user_id', user.id)
+        : await supabase.from('connector_profiles').insert([profileData])
       if (err) throw err
-      router.push('/dashboard')
+      router.push(`/c/${formData.username}`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -103,8 +119,8 @@ export default function ConnectorBuilder() {
 
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-10">
-          <h1 className="text-4xl font-bold mb-2">Build your connector profile</h1>
-          <p className="text-gray-400">Help founders succeed with structured intro requests.</p>
+          <h1 className="text-4xl font-bold mb-2">{isEditing ? 'Edit your connector profile' : 'Build your connector profile'}</h1>
+          <p className="text-gray-400">{isEditing ? 'Update your details below.' : 'Help founders succeed with structured intro requests.'}</p>
         </div>
 
         <div className="flex gap-2 mb-10">
@@ -125,10 +141,11 @@ export default function ConnectorBuilder() {
                 <div className="relative">
                   <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono">warmchain.com/connector/</span>
                   <input type="text" value={formData.username}
-                    onChange={e => set('username', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    onChange={e => !isEditing && set('username', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                     onFocus={() => setFocused('username')} onBlur={() => setFocused('')}
                     required placeholder="sarahchen"
-                    className={`${inputCls(focused === 'username')} pl-60 font-mono`} maxLength={30} />
+                    readOnly={isEditing}
+                    className={`${inputCls(focused === 'username')} pl-60 font-mono ${isEditing ? 'opacity-60 cursor-not-allowed' : ''}`} maxLength={30} />
                 </div>
               </div>
               <div>
@@ -217,7 +234,7 @@ export default function ConnectorBuilder() {
             ) : (
               <button type="submit" disabled={loading}
                 className="flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all disabled:opacity-50">
-                {loading ? 'Creating profile…' : 'Create Connector Profile ✨'}
+                {loading ? (isEditing ? 'Saving…' : 'Creating profile…') : (isEditing ? 'Save Changes' : 'Create Connector Profile ✨')}
               </button>
             )}
           </div>

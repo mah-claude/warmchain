@@ -1,5 +1,44 @@
 # Changelog
 
+## Auth Fix — Session Persistence + Owner Detection (2026-03-05)
+
+### Root Cause
+`proxy.ts` was the correct filename for Next.js 16 middleware, but:
+1. The exported function was named `proxy` in the original but the implementation was missing proper cookie propagation — refreshed tokens weren't being written back to both the request AND response, so tokens expired silently.
+2. The route matcher only covered `/builder`, leaving every other route without session refresh.
+
+### Fixed
+- **`proxy.ts`**: Rewrote cookie handling to update both `request.cookies` and `supabaseResponse.cookies` so refreshed JWTs are propagated correctly on every request.
+- **`proxy.ts`**: Expanded route matcher from `['/builder']` to all routes except static assets — sessions now refresh on every navigation.
+- **`proxy.ts`**: Switched from `getSession()` to `getUser()` which hits the auth server and forces a token refresh.
+
+### Owner Detection — `/f/[username]`
+- Detects if the logged-in user owns the founder profile (matches `profile.user_id === user.id`).
+- **Owner sees**: Yellow banner "This is how others see your profile" + Edit Profile button + Back to Dashboard nav link.
+- **Visitor (logged out)**: Public view + "Create yours — Free" CTA + signup prompt footer.
+- **Visitor (logged in, non-owner)**: Public view + "Browse Connectors" link (no double-CTA).
+- Skips view tracking for profile owner to keep view counts accurate.
+
+### Owner Detection — `/c/[username]`
+- Detects if the logged-in user owns the connector profile.
+- **Owner sees**: Banner "This is how founders see your profile" + Edit Profile button + Back to Dashboard with unread notification count badge.
+- **Non-owner founder**: Request Intro button (unchanged).
+- **Logged-out visitor**: Public view + "Join as Founder" CTA.
+- Request Intro button hidden for connector owner (can't intro yourself).
+
+### Edit Profile — `/builder` and `/connector-builder`
+- Both builder pages now prefill form data when the user already has a profile.
+- Submit uses `update` (not `insert`) for existing profiles — no duplicate records.
+- Username field is `readOnly` when editing (changing URL would break existing links).
+- Button text updates: "Save Changes" vs "Create Profile".
+- After save, navigates to the updated profile page.
+
+### Build
+- `npm run build` — 17 routes, zero errors, `ƒ Proxy (Middleware)` confirmed active.
+
+---
+
+
 ## Round 1 — QA Sweep (2026-03-05)
 
 ### Fixed

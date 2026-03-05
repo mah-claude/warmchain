@@ -30,6 +30,7 @@ export default function Builder() {
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -37,8 +38,25 @@ export default function Builder() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
-      const { data } = await supabase.from('profiles').select('username').eq('user_id', user.id).single()
-      if (data?.username) router.push(`/f/${data.username}`)
+      const { data } = await supabase.from('profiles').select('*').eq('user_id', user.id).single()
+      if (data) {
+        // Prefill form for editing
+        setIsEditing(true)
+        setFormData({
+          username: data.username ?? '',
+          company_name: data.company_name ?? '',
+          one_liner: data.one_liner ?? '',
+          stage: data.stage ?? '',
+          traction: data.traction ?? '',
+          mrr: data.mrr ?? '',
+          users_count: data.users_count ?? '',
+          growth: data.growth ?? '',
+          needs: data.needs ? data.needs.split(',').filter(Boolean) : [],
+          ask: data.ask ?? '',
+          team: data.team ?? '',
+          links: data.links ?? '',
+        })
+      }
     }
     check()
   }, [router])
@@ -70,7 +88,7 @@ export default function Builder() {
       const supabase = createClient()
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Not authenticated')
-      const { error: err } = await supabase.from('profiles').insert([{
+      const profileData = {
         user_id: user.id,
         user_type: 'founder',
         username: formData.username,
@@ -85,9 +103,12 @@ export default function Builder() {
         ask: formData.ask,
         team: formData.team,
         links: formData.links,
-      }])
+      }
+      const { error: err } = isEditing
+        ? await supabase.from('profiles').update(profileData).eq('user_id', user.id)
+        : await supabase.from('profiles').insert([profileData])
       if (err) throw err
-      router.push('/dashboard')
+      router.push(`/f/${formData.username}`)
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
@@ -116,8 +137,8 @@ export default function Builder() {
 
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-10">
-          <h1 className="text-4xl font-bold mb-2">Build your startup profile</h1>
-          <p className="text-gray-400">Fill in the details connectors need to say yes in 30 seconds.</p>
+          <h1 className="text-4xl font-bold mb-2">{isEditing ? 'Edit your startup profile' : 'Build your startup profile'}</h1>
+          <p className="text-gray-400">{isEditing ? 'Update your details below.' : 'Fill in the details connectors need to say yes in 30 seconds.'}</p>
         </div>
 
         {/* Step tabs */}
@@ -145,10 +166,11 @@ export default function Builder() {
                   <input
                     type="text"
                     value={formData.username}
-                    onChange={e => set('username', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
+                    onChange={e => !isEditing && set('username', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                     onFocus={() => setFocused('username')} onBlur={() => setFocused('')}
                     required placeholder="yourcompany"
-                    className={`${inputCls(focused === 'username')} pl-40 font-mono`}
+                    readOnly={isEditing}
+                    className={`${inputCls(focused === 'username')} pl-40 font-mono ${isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
                     maxLength={30}
                   />
                 </div>
@@ -278,7 +300,7 @@ export default function Builder() {
             ) : (
               <button type="submit" disabled={loading}
                 className="flex-1 py-3 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all disabled:opacity-50">
-                {loading ? 'Creating profile…' : 'Create Profile ✨'}
+                {loading ? (isEditing ? 'Saving…' : 'Creating profile…') : (isEditing ? 'Save Changes' : 'Create Profile ✨')}
               </button>
             )}
           </div>

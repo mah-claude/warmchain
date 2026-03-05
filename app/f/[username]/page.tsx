@@ -36,19 +36,37 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
   const [copied, setCopied] = useState(false)
   const [viewCount, setViewCount] = useState<number | null>(null)
 
+  // Auth state
+  const [isOwner, setIsOwner] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-      const { data } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('username', username)
-        .single()
+
+      // Fetch profile and auth in parallel
+      const [profileResult, userResult] = await Promise.all([
+        supabase.from('profiles').select('*').eq('username', username).single(),
+        supabase.auth.getUser(),
+      ])
+
+      const data = profileResult.data
+      const user = userResult.data.user
+
+      if (user) {
+        setIsLoggedIn(true)
+        // Check ownership: is this user's founder profile the one being viewed?
+        if (data && data.user_id === user.id) {
+          setIsOwner(true)
+        }
+      }
 
       if (data) {
         setProfile(data)
-        // Track view (fire and forget)
-        supabase.from('profile_views').insert([{ username, profile_type: 'founder' }]).then(() => {})
+        // Track view (fire and forget) — skip for owner to keep counts accurate
+        if (!user || data.user_id !== user.id) {
+          supabase.from('profile_views').insert([{ username, profile_type: 'founder' }]).then(() => {})
+        }
         // Get view count
         const { count } = await supabase
           .from('profile_views')
@@ -90,20 +108,54 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
 
   return (
     <div className="min-h-screen bg-black text-white">
+      {/* Owner banner */}
+      {isOwner && (
+        <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4 text-sm">
+            <span className="text-emerald-400 font-medium">
+              👁 This is how others see your profile
+            </span>
+            <div className="flex items-center gap-3">
+              <Link href="/builder" className="text-emerald-400 hover:text-emerald-300 transition-colors underline underline-offset-2 text-xs">
+                Edit profile
+              </Link>
+              <Link href="/dashboard" className="px-3 py-1 bg-emerald-500 text-black text-xs font-bold rounded-lg hover:bg-emerald-400 transition-all">
+                Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Nav */}
       <nav className="border-b border-white/10 bg-black/70 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <Link href="/" className="text-lg font-semibold hover:text-emerald-400 transition-colors">Warmchain</Link>
           <div className="flex items-center gap-2 sm:gap-4">
-            <button onClick={copyLink} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
-              {copied
-                ? <><svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400 text-xs">Copied!</span></>
-                : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg><span className="hidden sm:inline text-xs">Share</span></>
-              }
-            </button>
-            <Link href="/signup" className="px-4 py-2 bg-white text-black text-xs sm:text-sm font-semibold rounded-full hover:bg-emerald-400 transition-all">
-              Create yours
-            </Link>
+            {isOwner ? (
+              <>
+                <Link href="/dashboard" className="text-sm text-gray-400 hover:text-white transition-colors hidden sm:block">
+                  ← Dashboard
+                </Link>
+                <Link href="/builder" className="px-4 py-2 bg-white/10 border border-white/20 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-white/15 transition-all">
+                  Edit Profile
+                </Link>
+              </>
+            ) : (
+              <>
+                <button onClick={copyLink} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
+                  {copied
+                    ? <><svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400 text-xs">Copied!</span></>
+                    : <><svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg><span className="hidden sm:inline text-xs">Share</span></>
+                  }
+                </button>
+                {!isLoggedIn && (
+                  <Link href="/signup" className="px-4 py-2 bg-white text-black text-xs sm:text-sm font-semibold rounded-full hover:bg-emerald-400 transition-all">
+                    Create yours
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -181,14 +233,26 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
           </div>
         )}
 
-        {/* CTA */}
-        <div className="p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 text-center">
-          <p className="text-lg font-semibold mb-2">Create your own startup profile</p>
-          <p className="text-gray-400 text-sm mb-5">One link with everything connectors need. Free during beta.</p>
-          <Link href="/signup" className="inline-block px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all">
-            Get started — Free
-          </Link>
-        </div>
+        {/* CTA — only for logged-out visitors */}
+        {!isLoggedIn && (
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-white/[0.03] to-white/[0.01] border border-white/10 text-center">
+            <p className="text-lg font-semibold mb-2">Create your own startup profile</p>
+            <p className="text-gray-400 text-sm mb-5">One link with everything connectors need. Free during beta.</p>
+            <Link href="/signup" className="inline-block px-8 py-3 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all">
+              Get started — Free
+            </Link>
+          </div>
+        )}
+
+        {/* Logged-in non-owner: prompt to browse connectors */}
+        {isLoggedIn && !isOwner && (
+          <div className="p-6 rounded-2xl bg-white/[0.02] border border-white/10 text-center">
+            <p className="text-gray-400 text-sm mb-3">Looking to make warm intros?</p>
+            <Link href="/connectors" className="text-emerald-400 hover:text-emerald-300 text-sm font-medium transition-colors">
+              Browse Connectors →
+            </Link>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
