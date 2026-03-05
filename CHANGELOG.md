@@ -1,5 +1,34 @@
 # Changelog
 
+## Dashboard Rebuild — Command Center (2026-03-05)
+
+### Founder Dashboard
+- **4 tabs**: Overview, Intro Requests, My Network, Activity Feed
+- **Overview**: 4 stat cards (Profile Views, Requests Sent, Acceptance Rate, Active Network) + AreaChart (30-day profile views) + BarChart (requests by month) + profile quick-actions card
+- **GitHub integration**: Added `github_repo` field to builder (Step 3). Overview shows repo stats (open issues, stars, last push) + last 5 commits with SHA, message, author, time. Data fetched from GitHub REST API.
+- **Intro Requests tab**: Filter by All / Pending / Accepted / Declined with live counts. Full message preview, connector info, date.
+- **My Network tab**: Grid of accepted connectors with expertise tags, bio snippet, link to profile.
+- **Activity Feed**: Timeline of all request events (sent, accepted, declined) sorted by date.
+
+### Connector Dashboard
+- **3 tabs**: Pending, History, Analytics
+- **Analytics tab**: BarChart (requests by month) + response breakdown progress bars (accepted/declined/pending %) + expertise tags
+- **Upgraded stats**: 4 stat cards — Requests Received, Intros Made, Response Rate (color-coded), Profile Views
+- **Shared DashNav**: Extracted nav with notification panel (mark-all-read), role badge, username badge
+
+### DB Migration
+- Added `github_repo text` column to `profiles` table via Supabase Management API
+
+### Dependencies
+- Added `recharts` (AreaChart, BarChart, ResponsiveContainer, CartesianGrid, Tooltip)
+
+### Build
+- `npm run build` — 17 routes, zero errors, TypeScript clean.
+
+---
+
+
+
 ## Auth Fix — Session Persistence + Owner Detection (2026-03-05)
 
 ### Root Cause
