@@ -1,18 +1,20 @@
 'use client'
 
-import { useState, FormEvent } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, FormEvent, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import AIChat from '@/components/AIChat'
 
-export default function Login() {
+function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const next = searchParams.get('next') ?? '/dashboard'
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
@@ -33,7 +35,7 @@ export default function Login() {
       } = await supabase.auth.getUser()
 
       if (user) {
-        router.push('/dashboard')
+        router.push(next)
       }
     } catch (err: any) {
       setError(err?.message || 'Invalid email or password')
@@ -408,5 +410,13 @@ export default function Login() {
         }
       `}</style>
     </div>
+  )
+}
+
+export default function Login() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }

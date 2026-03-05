@@ -13,12 +13,9 @@ export default function About() {
             Warmchain
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <button 
-              onClick={() => window.location.href = '/#product'}
-              className="text-sm text-gray-400 hover:text-white transition-colors"
-            >
+            <Link href="/#product" className="text-sm text-gray-400 hover:text-white transition-colors">
               Product
-            </button>
+            </Link>
             <Link href="/about" className="text-sm text-white font-medium">
               About
             </Link>
@@ -288,8 +285,8 @@ export default function About() {
           <div className="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-500">
             <p>© 2026 Warmchain. All rights reserved.</p>
             <div className="flex gap-6">
-              <a href="#" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#" className="hover:text-white transition-colors">Terms</a>
+              <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
             </div>
           </div>
         </div>
