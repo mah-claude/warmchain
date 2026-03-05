@@ -10,6 +10,69 @@ import {
 import { createClient } from '@/lib/supabase'
 import { Profile, ConnectorProfile, IntroRequest, Notification, NEEDS_OPTIONS, HELPS_WITH_OPTIONS, EXPERTISE_OPTIONS } from '@/lib/types'
 
+// ─── Profile completeness ──────────────────────────────────────────────────────
+
+function founderCompleteness(p: Profile): { pct: number; missing: string[] } {
+  const fields: [string, unknown, string][] = [
+    ['username', p.username, 'Username'],
+    ['company_name', p.company_name, 'Company name'],
+    ['one_liner', p.one_liner, 'One-liner'],
+    ['stage', p.stage, 'Stage'],
+    ['traction', p.traction, 'Traction'],
+    ['needs', p.needs, 'What you need'],
+    ['ask', p.ask, 'Describe your ask'],
+    ['mrr', p.mrr, 'MRR'],
+    ['users_count', p.users_count, 'User count'],
+    ['growth', p.growth, 'Growth rate'],
+    ['team', p.team, 'Team'],
+    ['links', p.links, 'Links'],
+    ['github_repo', p.github_repo, 'GitHub repo'],
+  ]
+  const filled = fields.filter(([, v]) => v && String(v).trim())
+  const missing = fields.filter(([, v]) => !v || !String(v).trim()).map(([, , label]) => label)
+  return { pct: Math.round((filled.length / fields.length) * 100), missing }
+}
+
+function connectorCompleteness(p: ConnectorProfile): { pct: number; missing: string[] } {
+  const fields: [string, unknown, string][] = [
+    ['username', p.username, 'Username'],
+    ['name', p.name, 'Name'],
+    ['bio', p.bio, 'Bio'],
+    ['expertise', p.expertise, 'Expertise areas'],
+    ['helps_with', p.helps_with, 'Helps with'],
+    ['portfolio', p.portfolio, 'Track record'],
+    ['links', p.links, 'Links'],
+  ]
+  const filled = fields.filter(([, v]) => v && String(v).trim())
+  const missing = fields.filter(([, v]) => !v || !String(v).trim()).map(([, , label]) => label)
+  return { pct: Math.round((filled.length / fields.length) * 100), missing }
+}
+
+function CompletenessBar({ pct, missing, editHref }: { pct: number; missing: string[]; editHref: string }) {
+  if (pct === 100) return null
+  const color = pct >= 75 ? 'bg-emerald-500' : pct >= 50 ? 'bg-yellow-500' : 'bg-rose-500'
+  const tip = missing.slice(0, 3).join(', ') + (missing.length > 3 ? ` +${missing.length - 3} more` : '')
+  return (
+    <div className="mb-6 p-4 rounded-2xl border border-white/10 bg-white/[0.02] flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1">
+        <div className="flex items-center justify-between mb-1.5">
+          <span className="text-sm font-medium text-white">Profile {pct}% complete</span>
+          <span className="text-xs text-gray-500">{100 - pct}% to go</span>
+        </div>
+        <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+          <div className={`h-full rounded-full transition-all ${color}`} style={{ width: `${pct}%` }} />
+        </div>
+        {missing.length > 0 && (
+          <p className="text-xs text-gray-500 mt-1.5">Add: {tip}</p>
+        )}
+      </div>
+      <Link href={editHref} className="flex-shrink-0 px-4 py-2 text-sm text-emerald-400 border border-emerald-500/30 rounded-xl hover:bg-emerald-500/10 transition-all whitespace-nowrap">
+        Complete profile →
+      </Link>
+    </div>
+  )
+}
+
 // ─── Shared helpers ────────────────────────────────────────────────────────────
 
 function StatCard({ label, value, sub, color = 'emerald' }: { label: string; value: string | number; sub?: string; color?: 'emerald' | 'yellow' | 'blue' | 'rose' }) {
@@ -335,6 +398,9 @@ function FounderDashboard({ profile }: { profile: Profile }) {
             </Link>
           </div>
         </div>
+
+        {/* Profile completeness */}
+        <CompletenessBar {...founderCompleteness(profile)} editHref="/builder" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap">
@@ -712,9 +778,11 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
       setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status } : r))
       if (req.founder_user_id_val) {
         const { data: { session } } = await supabase.auth.getSession()
-        await fetch('/api/notify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) },
+        const headers = { 'Content-Type': 'application/json', ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}) }
+
+        // In-app notification
+        fetch('/api/notify', {
+          method: 'POST', headers,
           body: JSON.stringify({
             user_id: req.founder_user_id_val,
             type: status === 'accepted' ? 'request_accepted' : 'request_declined',
@@ -724,7 +792,22 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
               : `${profile.name} couldn't help this time. Keep reaching out to other connectors.`,
             request_id: req.id,
           }),
-        })
+        }).catch(() => {})
+
+        // Email notification to founder — server-side email route handles user lookup
+        if (session?.access_token) {
+          fetch('/api/email', {
+            method: 'POST', headers,
+            body: JSON.stringify({
+              type: status === 'accepted' ? 'request_accepted' : 'request_declined',
+              to: null, // Will use founder_user_id lookup on server
+              founder_user_id: req.founder_user_id_val,
+              founder_company: req.founder_company ?? req.founder_username,
+              connector_name: profile.name,
+              connector_username: profile.username,
+            }),
+          }).catch(() => {})
+        }
       }
     } finally {
       setUpdating(null)
@@ -768,6 +851,9 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
           <StatCard label="Response Rate" value={`${responseRate}%`} sub={pending.length > 0 ? `${pending.length} pending` : 'all handled'} color={responseRate >= 80 ? 'emerald' : responseRate >= 50 ? 'yellow' : 'rose'} />
           <StatCard label="Profile Views" value={viewCount} sub="total" color="blue" />
         </div>
+
+        {/* Profile completeness */}
+        <CompletenessBar {...connectorCompleteness(profile)} editHref="/connector-builder" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap">

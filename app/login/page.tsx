@@ -6,39 +6,40 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase'
 import AIChat from '@/components/AIChat'
 
+function useRateLimit(maxAttempts = 5, windowMs = 60000) {
+  const [attempts, setAttempts] = useState<number[]>([])
+  const isLimited = attempts.filter(t => Date.now() - t < windowMs).length >= maxAttempts
+  const recordAttempt = () => setAttempts(prev => [...prev.filter(t => Date.now() - t < windowMs), Date.now()])
+  const waitSeconds = isLimited ? Math.ceil((Math.min(...attempts) + windowMs - Date.now()) / 1000) : 0
+  return { isLimited, recordAttempt, waitSeconds }
+}
+
 function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
+  const { isLimited, recordAttempt, waitSeconds } = useRateLimit()
   const router = useRouter()
   const searchParams = useSearchParams()
   const next = searchParams.get('next') ?? '/dashboard'
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
+    if (isLimited) { setError(`Too many attempts. Please wait ${waitSeconds}s before trying again.`); return }
     setError('')
     setLoading(true)
+    recordAttempt()
 
     try {
       const supabase = createClient()
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
       if (signInError) throw signInError
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (user) {
-        router.push(next)
-      }
-    } catch (err: any) {
-      setError(err?.message || 'Invalid email or password')
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) router.push(next)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Invalid email or password')
     } finally {
       setLoading(false)
     }

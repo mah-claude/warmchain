@@ -3,14 +3,33 @@
 import Link from 'next/link'
 import AIChat from '@/components/AIChat'
 import { useState, useEffect } from 'react'
+import { createClient } from '@/lib/supabase'
 
 export default function Home() {
   const [scrollY, setScrollY] = useState(0)
+  const [counts, setCounts] = useState({ founders: 0, connectors: 0, intros: 0 })
 
   useEffect(() => {
     const handleScroll = () => setScrollY(window.scrollY)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const supabase = createClient()
+      const [fResult, cResult, iResult] = await Promise.all([
+        supabase.from('profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('connector_profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('intro_requests').select('id', { count: 'exact', head: true }).eq('status', 'accepted'),
+      ])
+      setCounts({
+        founders: fResult.count ?? 0,
+        connectors: cResult.count ?? 0,
+        intros: iResult.count ?? 0,
+      })
+    }
+    fetchCounts()
   }, [])
 
   return (
@@ -434,10 +453,10 @@ export default function Home() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { number: '50+', label: 'Founders using Warmchain' },
-              { number: '200+', label: 'Profiles created' },
+              { number: counts.founders > 0 ? `${counts.founders}` : '–', label: 'Founders on Warmchain' },
+              { number: counts.connectors > 0 ? `${counts.connectors}` : '–', label: 'Active connectors' },
+              { number: counts.intros > 0 ? `${counts.intros}` : '–', label: 'Intros made' },
               { number: '< 10min', label: 'Average setup time' },
-              { number: '30sec', label: 'Connector decision time' },
             ].map((stat, i) => (
               <div key={i} className="text-center">
                 <div className="text-4xl font-bold bg-gradient-to-r from-emerald-400 to-green-400 bg-clip-text text-transparent mb-2">

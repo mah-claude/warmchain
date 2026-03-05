@@ -19,7 +19,6 @@ function ConnectorProfileInner({ username }: { username: string }) {
   const [profile, setProfile] = useState<ConnectorProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
-  const [viewCount, setViewCount] = useState<number | null>(null)
 
   // Auth / visitor state
   const [isOwner, setIsOwner] = useState(false)
@@ -81,15 +80,7 @@ function ConnectorProfileInner({ username }: { username: string }) {
           }
         }
 
-        // Track view (fire and forget) — skip for owner
-        if (!user || cp.user_id !== user.id) {
-          supabase.from('profile_views').insert([{ username, profile_type: 'connector' }]).then(() => {})
-        }
-        // View count
-        const { count } = await supabase
-          .from('profile_views').select('id', { count: 'exact', head: true })
-          .eq('username', username).eq('profile_type', 'connector')
-        setViewCount(count ?? 0)
+        // No view tracking for connector profiles — only founders track views
       }
 
       setLoading(false)
@@ -186,8 +177,21 @@ function ConnectorProfileInner({ username }: { username: string }) {
   const helpsLabels = helpsTags.map(v => HELPS_WITH_OPTIONS.find(o => o.value === v)?.label ?? v)
   const linksArray = profile.links?.split(',').map(s => s.trim()).filter(Boolean) ?? []
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Person',
+    name: profile.name,
+    description: profile.bio,
+    url: `https://warmchain.com/c/${profile.username}`,
+    ...(expertiseTags.length && { knowsAbout: expertiseTags }),
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Owner banner */}
       {isOwner && (
         <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5">
@@ -311,9 +315,6 @@ function ConnectorProfileInner({ username }: { username: string }) {
               </div>
               <h1 className="text-3xl sm:text-4xl font-bold mb-1">{profile.name}</h1>
               <p className="text-gray-400">{profile.bio}</p>
-              {viewCount !== null && viewCount > 0 && (
-                <p className="text-xs text-gray-600 mt-1">{viewCount} profile views</p>
-              )}
             </div>
           </div>
 

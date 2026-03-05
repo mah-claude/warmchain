@@ -66,6 +66,12 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
         // Track view (fire and forget) — skip for owner to keep counts accurate
         if (!user || data.user_id !== user.id) {
           supabase.from('profile_views').insert([{ username, profile_type: 'founder' }]).then(() => {})
+          // Page analytics
+          fetch('/api/analytics', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ page: `/f/${username}`, referrer: document.referrer, is_authenticated: !!user }),
+          }).catch(() => {})
         }
         // Get view count
         const { count } = await supabase
@@ -106,8 +112,21 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
   const linksArray = profile.links?.split(',').map(s => s.trim()).filter(Boolean) ?? []
   const needsList = profile.needs?.split(',').filter(Boolean).map(v => NEEDS_OPTIONS.find(o => o.value === v)?.label ?? v) ?? []
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: profile.company_name,
+    description: profile.one_liner,
+    url: `https://warmchain.com/f/${profile.username}`,
+    ...(profile.stage && { foundingDate: profile.stage }),
+  }
+
   return (
     <div className="min-h-screen bg-black text-white">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Owner banner */}
       {isOwner && (
         <div className="bg-emerald-500/10 border-b border-emerald-500/20 px-4 py-2.5">

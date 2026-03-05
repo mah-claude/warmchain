@@ -8,6 +8,15 @@ import AIChat from '@/components/AIChat'
 
 type UserType = 'founder' | 'connector' | null
 
+// Simple client-side rate limiter (5 attempts per 60s)
+function useRateLimit(maxAttempts = 5, windowMs = 60000) {
+  const [attempts, setAttempts] = useState<number[]>([])
+  const isLimited = attempts.filter(t => Date.now() - t < windowMs).length >= maxAttempts
+  const recordAttempt = () => setAttempts(prev => [...prev.filter(t => Date.now() - t < windowMs), Date.now()])
+  const waitSeconds = isLimited ? Math.ceil((Math.min(...attempts) + windowMs - Date.now()) / 1000) : 0
+  return { isLimited, recordAttempt, waitSeconds }
+}
+
 export default function Signup() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -16,6 +25,7 @@ export default function Signup() {
   const [loading, setLoading] = useState(false)
   const [focusedField, setFocusedField] = useState<string | null>(null)
   const [passwordStrength, setPasswordStrength] = useState(0)
+  const { isLimited, recordAttempt, waitSeconds } = useRateLimit()
   const router = useRouter()
 
   const calculatePasswordStrength = (pass: string) => {
@@ -34,37 +44,34 @@ export default function Signup() {
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
-    
-    if (!userType) {
-      setError('Please select your account type')
-      return
-    }
-    
+    if (!userType) { setError('Please select your account type'); return }
+    if (isLimited) { setError(`Too many attempts. Wait ${waitSeconds}s.`); return }
+
     setError('')
     setLoading(true)
+    recordAttempt()
 
     try {
       const supabase = createClient()
       const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: {
-            user_type: userType
-          }
-        }
+        options: { data: { user_type: userType } }
       })
-
       if (signUpError) throw signUpError
 
-      // Redirect based on user type
-      if (userType === 'founder') {
-        router.push('/builder')
-      } else {
-        router.push('/connector-builder')
+      // Send welcome email (fire and forget — don't block navigation)
+      if (data.session?.access_token) {
+        fetch('/api/email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
+          body: JSON.stringify({ type: 'welcome', email, user_type: userType }),
+        }).catch(() => {})
       }
-    } catch (err: any) {
-      setError(err.message || 'Something went wrong')
+
+      router.push(userType === 'founder' ? '/builder' : '/connector-builder')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
       setLoading(false)
     }
