@@ -33,6 +33,38 @@
 
 ---
 
-## Round 3 — UX Polish (coming next)
+## Round 3 — UX Polish (2026-03-05)
 
-Planned: empty state review, success messages, loading state audit
+### Fixed
+- **`app/signup/backup.tsx`**: Deleted leftover backup file that had broken `href="#"` links — no user-facing impact but cleaned up the codebase.
+
+### Verified (no changes needed)
+- **Loading states**: All async buttons show spinner/disabled state during operations (login, signup, builder submit, intro request, accept/decline).
+- **Error messages**: All forms show inline red error messages with specific text (not generic "error").
+- **Success states**: Intro request modal shows "✓ Request sent!" success state and auto-closes.
+- **Empty states**: All list views have meaningful empty states with calls to action:
+  - Founder dashboard "No requests sent yet" → links to Browse Connectors
+  - Connector inbox "No pending requests" with explanation
+  - Notification bell "No notifications yet"
+  - Connectors page "No connectors found" with filter clear
+- **404 page**: Created branded 404 with navigation links.
+- **Profile not found**: Both `/f/[username]` and `/c/[username]` show inline "Profile not found" state (not a crash).
+- **No broken `href="#"` links** remaining in any active page.
+
+### Build
+- `npm run build` — 17 routes, zero errors.
+
+---
+
+## Round 4 — Performance (2026-03-05)
+
+### Verified (no changes needed)
+- **Parallel data fetching**: Dashboard uses `Promise.all` for founder + connector profile lookups.
+- **Fire-and-forget profile views**: Profile view inserts don't block page render — `supabase.from('profile_views').insert(...).then(() => {})`.
+- **No unnecessary re-renders**: State updates are batched correctly; `useEffect` deps are minimal.
+- **No images**: App uses CSS gradients and SVG icons — no image optimization needed.
+- **Supabase indexes**: `idx_notif_user` on `(user_id, read, created_at DESC)` and `idx_pv_username` on `(username, created_at)` cover the main query patterns.
+- **Static routes pre-rendered**: 10 of 17 routes are static (○) — landing page, auth pages, about, faq, etc.
+
+### Build
+- `npm run build` — 17 routes, zero errors, TypeScript clean.
