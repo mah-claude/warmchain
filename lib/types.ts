@@ -13,6 +13,7 @@ export type Profile = {
   growth: string | null
   team: string | null
   links: string | null
+  github_repo: string | null
   created_at: string
 }
 

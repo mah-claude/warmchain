@@ -27,6 +27,7 @@ export default function Builder() {
     ask: '',
     team: '',
     links: '',
+    github_repo: '',
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -55,6 +56,7 @@ export default function Builder() {
           ask: data.ask ?? '',
           team: data.team ?? '',
           links: data.links ?? '',
+          github_repo: data.github_repo ?? '',
         })
       }
     }
@@ -103,6 +105,7 @@ export default function Builder() {
         ask: formData.ask,
         team: formData.team,
         links: formData.links,
+        github_repo: formData.github_repo || null,
       }
       const { error: err } = isEditing
         ? await supabase.from('profiles').update(profileData).eq('user_id', user.id)
@@ -275,6 +278,14 @@ export default function Builder() {
                   onFocus={() => setFocused('links')} onBlur={() => setFocused('')}
                   placeholder="https://yoursite.com, https://twitter.com/you"
                   className={inputCls(focused === 'links')} maxLength={300} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">GitHub Repo</label>
+                <input type="text" value={formData.github_repo} onChange={e => set('github_repo', e.target.value)}
+                  onFocus={() => setFocused('github_repo')} onBlur={() => setFocused('')}
+                  placeholder="owner/repo-name"
+                  className={inputCls(focused === 'github_repo')} maxLength={100} />
+                <p className="text-xs text-gray-500 mt-1">Optional. Shows recent commits on your dashboard.</p>
               </div>
             </div>
           )}
