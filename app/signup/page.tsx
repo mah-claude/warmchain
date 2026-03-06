@@ -60,14 +60,12 @@ export default function Signup() {
       })
       if (signUpError) throw signUpError
 
-      // Send welcome email (fire and forget — don't block navigation)
-      if (data.session?.access_token) {
-        fetch('/api/email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` },
-          body: JSON.stringify({ type: 'welcome', email, user_type: userType }),
-        }).catch(() => {})
-      }
+      // Send welcome email — fire and forget, no auth needed for welcome type
+      fetch('/api/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'welcome', email, user_type: userType }),
+      }).catch(() => {})
 
       router.push(userType === 'founder' ? '/builder' : '/connector-builder')
     } catch (err: unknown) {

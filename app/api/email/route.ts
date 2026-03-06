@@ -151,21 +151,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, skipped: true })
   }
 
-  // Auth check
-  const authHeader = req.headers.get('authorization')
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
-  if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   const serviceClient = createServiceClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
-  const { data: { user }, error: authError } = await serviceClient.auth.getUser(token)
-  if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const body = await req.json()
     const { type, to, subject, ...data } = body
+
+    // Welcome emails are unauthenticated (no session exists at signup time)
+    // All other email types require a valid user Bearer token
+    if (type !== 'welcome') {
+      const authHeader = req.headers.get('authorization')
+      const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null
+      if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      const { data: { user }, error: authError } = await serviceClient.auth.getUser(token)
+      if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     let html = ''
     let emailSubject = subject ?? 'Warmchain'
