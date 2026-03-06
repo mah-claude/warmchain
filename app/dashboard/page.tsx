@@ -8,7 +8,7 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { createClient } from '@/lib/supabase'
-import { Profile, ConnectorProfile, IntroRequest, Notification, NEEDS_OPTIONS, HELPS_WITH_OPTIONS, EXPERTISE_OPTIONS, STAGES } from '@/lib/types'
+import { Profile, ConnectorProfile, IntroRequest, Notification, NEEDS_OPTIONS, HELPS_WITH_OPTIONS, EXPERTISE_OPTIONS, STAGES, ASK_TYPE_OPTIONS, TIMELINE_OPTIONS } from '@/lib/types'
 
 // ─── Profile completeness ──────────────────────────────────────────────────────
 
@@ -807,7 +807,17 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
     setUpdating(req.id)
     try {
       const supabase = createClient()
-      await supabase.from('intro_requests').update({ status }).eq('id', req.id)
+      const now = new Date().toISOString()
+      const update: Record<string, string> = {
+        status,
+        responded_at: now,
+        ...(status === 'accepted' ? { accepted_at: now } : { declined_at: now }),
+      }
+      // Try update with lifecycle timestamps, fall back to status-only if columns missing
+      const { error: e1 } = await supabase.from('intro_requests').update(update).eq('id', req.id)
+      if (e1 && (e1.code === '42703' || e1.message?.includes('column'))) {
+        await supabase.from('intro_requests').update({ status }).eq('id', req.id)
+      }
       setRequests(prev => prev.map(r => r.id === req.id ? { ...r, status } : r))
       if (req.founder_user_id_val) {
         const { data: { session } } = await supabase.auth.getSession()
@@ -908,39 +918,82 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
             </div>
           ) : (
             <div className="space-y-4">
-              {pending.map(req => (
-                <div key={req.id} className="p-5 rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.03] hover:border-yellow-500/25 transition-all">
-                  <div className="flex items-start gap-3 mb-4">
-                    <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
-                      {(req.founder_company ?? req.founder_username).charAt(0)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                        <span className="font-semibold">{req.founder_company ?? req.founder_username}</span>
-                        {req.founder_stage && <span className="px-2 py-0.5 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">{req.founder_stage}</span>}
+              {pending.map(req => {
+                const askLabel = req.ask_type ? (ASK_TYPE_OPTIONS.find(o => o.value === req.ask_type)?.label ?? req.ask_type) : null
+                const timelineLabel = req.timeline ? (TIMELINE_OPTIONS.find(o => o.value === req.timeline)?.label ?? req.timeline) : null
+                const age = Math.round((Date.now() - new Date(req.created_at).getTime()) / (1000 * 60 * 60))
+                const ageStr = age < 24 ? `${age}h ago` : `${Math.round(age / 24)}d ago`
+                return (
+                  <div key={req.id} className="rounded-2xl border border-yellow-500/15 bg-yellow-500/[0.03] hover:border-yellow-500/30 transition-all overflow-hidden">
+                    {/* Card header */}
+                    <div className="flex items-start gap-3 p-5 pb-4">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-black font-bold text-sm flex-shrink-0">
+                        {(req.founder_company ?? req.founder_username).charAt(0)}
                       </div>
-                      {req.founder_one_liner && <p className="text-sm text-gray-400 line-clamp-1">{req.founder_one_liner}</p>}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                          <span className="font-semibold">{req.founder_company ?? req.founder_username}</span>
+                          {req.founder_stage && <span className="px-2 py-0.5 rounded-full text-xs bg-white/5 text-gray-400 border border-white/10">{req.founder_stage}</span>}
+                          {askLabel && <span className="px-2 py-0.5 rounded-full text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{askLabel}</span>}
+                        </div>
+                        {req.founder_one_liner && <p className="text-sm text-gray-400 line-clamp-1">{req.founder_one_liner}</p>}
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <span className="text-xs text-gray-600">{ageStr}</span>
+                        <Link href={`/f/${req.founder_username}`} target="_blank" className="text-xs text-gray-500 hover:text-emerald-400 transition-colors">
+                          Profile →
+                        </Link>
+                      </div>
                     </div>
-                    <Link href={`/f/${req.founder_username}`} target="_blank" className="text-xs text-gray-500 hover:text-emerald-400 transition-colors flex-shrink-0">
-                      Profile →
-                    </Link>
+
+                    {/* Structured fields */}
+                    <div className="px-5 pb-4 space-y-2.5">
+                      {req.target_profile ? (
+                        <div className="flex gap-2">
+                          <span className="text-xs font-semibold text-gray-500 w-20 pt-0.5 flex-shrink-0">Target</span>
+                          <p className="text-sm text-gray-300">{req.target_profile}</p>
+                        </div>
+                      ) : null}
+                      {req.why_me ? (
+                        <div className="flex gap-2">
+                          <span className="text-xs font-semibold text-gray-500 w-20 pt-0.5 flex-shrink-0">Why you</span>
+                          <p className="text-sm text-gray-300">{req.why_me}</p>
+                        </div>
+                      ) : null}
+                      {req.forwardable_blurb ? (
+                        <div className="flex gap-2">
+                          <span className="text-xs font-semibold text-gray-500 w-20 pt-0.5 flex-shrink-0">Blurb</span>
+                          <p className="text-sm text-gray-400 italic leading-relaxed">"{req.forwardable_blurb}"</p>
+                        </div>
+                      ) : null}
+                      {/* Fallback: show raw message if no structured fields */}
+                      {!req.target_profile && !req.why_me && req.message && (
+                        <div className="p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
+                          <p className="text-sm text-gray-300 leading-relaxed whitespace-pre-line">"{req.message}"</p>
+                        </div>
+                      )}
+                      {timelineLabel && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs text-gray-600">⏱ Timeline:</span>
+                          <span className="text-xs text-gray-400">{timelineLabel}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Action row */}
+                    <div className="flex gap-0 border-t border-white/10">
+                      <button onClick={() => updateStatus(req, 'accepted')} disabled={updating === req.id}
+                        className="flex-1 py-3 bg-emerald-500/10 text-emerald-400 font-bold text-sm hover:bg-emerald-500 hover:text-black transition-all disabled:opacity-50 border-r border-white/10">
+                        {updating === req.id ? '…' : '✓ Accept'}
+                      </button>
+                      <button onClick={() => updateStatus(req, 'declined')} disabled={updating === req.id}
+                        className="flex-1 py-3 text-gray-500 text-sm hover:bg-red-500/10 hover:text-red-400 transition-all disabled:opacity-50">
+                        {updating === req.id ? '…' : '✕ Decline'}
+                      </button>
+                    </div>
                   </div>
-                  <div className="mb-4 p-3.5 rounded-xl bg-white/[0.04] border border-white/10">
-                    <p className="text-sm text-gray-300 leading-relaxed">"{req.message}"</p>
-                  </div>
-                  <div className="flex gap-3 items-center">
-                    <button onClick={() => updateStatus(req, 'accepted')} disabled={updating === req.id}
-                      className="flex-1 py-2.5 bg-emerald-500 text-black font-bold rounded-xl text-sm hover:bg-emerald-400 transition-all disabled:opacity-50">
-                      {updating === req.id ? '…' : '✓ Accept'}
-                    </button>
-                    <button onClick={() => updateStatus(req, 'declined')} disabled={updating === req.id}
-                      className="flex-1 py-2.5 border border-white/20 text-gray-300 rounded-xl text-sm hover:bg-white/5 transition-all disabled:opacity-50">
-                      {updating === req.id ? '…' : '✕ Decline'}
-                    </button>
-                    <p className="text-xs text-gray-600 flex-shrink-0">{new Date(req.created_at).toLocaleDateString()}</p>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           )
         )}

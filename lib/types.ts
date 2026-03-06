@@ -17,6 +17,29 @@ export type Profile = {
   created_at: string
 }
 
+export type IntroRequest = {
+  id: string
+  founder_user_id: string
+  connector_user_id: string
+  founder_username: string
+  connector_username: string
+  message: string
+  status: 'pending' | 'accepted' | 'declined'
+  created_at: string
+  // Structured fields (added in migration 20260306000000)
+  ask_type?: string | null
+  target_profile?: string | null
+  why_me?: string | null
+  forwardable_blurb?: string | null
+  timeline?: string | null
+  priority?: string | null
+  // Lifecycle timestamps
+  viewed_at?: string | null
+  responded_at?: string | null
+  accepted_at?: string | null
+  declined_at?: string | null
+}
+
 export type ConnectorProfile = {
   id: string
   user_id: string
@@ -28,17 +51,12 @@ export type ConnectorProfile = {
   portfolio: string | null
   links: string | null
   created_at: string
-}
-
-export type IntroRequest = {
-  id: string
-  founder_user_id: string
-  connector_user_id: string
-  founder_username: string
-  connector_username: string
-  message: string
-  status: 'pending' | 'accepted' | 'declined'
-  created_at: string
+  // Reputation fields (added in migration 20260306000000)
+  is_available?: boolean
+  total_requests?: number | null
+  response_rate?: number | null
+  median_response_hours?: number | null
+  accept_rate?: number | null
 }
 
 export type Notification = {
@@ -80,4 +98,20 @@ export const HELPS_WITH_OPTIONS = [
   { value: 'hiring', label: 'Hiring' },
   { value: 'customer_intros', label: 'Customer Intros' },
   { value: 'strategy', label: 'Strategy' },
+] as const
+
+export const ASK_TYPE_OPTIONS = [
+  { value: 'investor_intro', label: 'Investor Intro', icon: '💰' },
+  { value: 'customer_intro', label: 'Customer Intro', icon: '🤝' },
+  { value: 'hire', label: 'Hire', icon: '👥' },
+  { value: 'partnership', label: 'Partnership', icon: '🔗' },
+  { value: 'advice', label: 'Advice / Mentorship', icon: '💡' },
+  { value: 'other', label: 'Other', icon: '📋' },
+] as const
+
+export const TIMELINE_OPTIONS = [
+  { value: 'asap', label: 'ASAP (this week)' },
+  { value: '2_weeks', label: 'Within 2 weeks' },
+  { value: '1_month', label: 'Within a month' },
+  { value: 'flexible', label: 'Flexible' },
 ] as const
