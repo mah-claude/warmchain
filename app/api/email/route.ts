@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 
-const FROM = 'Warmchain <hello@warmchain.com>'
+const FROM = 'Warmchain <hello@warmchain.co>'
 
 // ─── HTML email templates ──────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
 <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;">
   <!-- Logo -->
   <tr><td style="padding-bottom:32px;">
-    <a href="https://warmchain.com" style="text-decoration:none;">
+    <a href="https://warmchain.co" style="text-decoration:none;">
       <span style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">Warmchain</span>
     </a>
   </td></tr>
@@ -31,7 +31,7 @@ ${preheader ? `<div style="display:none;max-height:0;overflow:hidden;mso-hide:al
   <!-- Footer -->
   <tr><td style="padding-top:32px;text-align:center;">
     <p style="margin:0;font-size:12px;color:#404040;line-height:1.6;">
-      © 2026 Warmchain · <a href="https://warmchain.com/privacy" style="color:#404040;">Privacy</a> · <a href="https://warmchain.com/terms" style="color:#404040;">Terms</a>
+      © 2026 Warmchain · <a href="https://warmchain.co/privacy" style="color:#404040;">Privacy</a> · <a href="https://warmchain.co/terms" style="color:#404040;">Terms</a>
     </p>
   </td></tr>
 </table>
@@ -74,7 +74,7 @@ function welcome(email: string, userType: 'founder' | 'connector') {
       <p style="margin:0;font-size:14px;color:#d1d5db;">✓ Review and respond to founder requests</p>
       `}
     </div>
-    ${btn(isFounder ? 'Build Your Profile →' : 'Create Connector Profile →', isFounder ? 'https://warmchain.com/builder' : 'https://warmchain.com/connector-builder')}
+    ${btn(isFounder ? 'Build Your Profile →' : 'Create Connector Profile →', isFounder ? 'https://warmchain.co/builder' : 'https://warmchain.co/connector-builder')}
     <p style="margin:32px 0 0;font-size:13px;color:#6b7280;">
       Any questions? Reply to this email — we read every one.
     </p>`
@@ -93,9 +93,9 @@ function newRequest(connectorName: string, founderCompany: string, founderUserna
       <p style="margin:0 0 12px;font-size:12px;font-weight:600;color:#eab308;text-transform:uppercase;letter-spacing:0.1em;">Their message</p>
       <p style="margin:0;font-size:15px;color:#d1d5db;line-height:1.7;font-style:italic;">"${message.slice(0, 300)}${message.length > 300 ? '…' : ''}"</p>
     </div>
-    ${btn('Review Request →', `https://warmchain.com/f/${founderUsername}`)}
+    ${btn('Review Request →', `https://warmchain.co/f/${founderUsername}`)}
     <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
-      Accept or decline from your <a href="https://warmchain.com/dashboard" style="color:#10b981;">dashboard</a>.
+      Accept or decline from your <a href="https://warmchain.co/dashboard" style="color:#10b981;">dashboard</a>.
     </p>`
   return base(content, `${founderCompany} wants your help with a warm intro.`)
 }
@@ -114,9 +114,9 @@ function requestAccepted(founderCompany: string, connectorName: string, connecto
       <p style="margin:0 0 8px;font-size:14px;color:#d1d5db;">2. Keep your message brief — they already know your story from your profile</p>
       <p style="margin:0;font-size:14px;color:#d1d5db;">3. Close the loop after the intro happens</p>
     </div>
-    ${btn(`View ${connectorName.split(' ')[0]}'s Profile →`, `https://warmchain.com/c/${connectorUsername}`)}
+    ${btn(`View ${connectorName.split(' ')[0]}'s Profile →`, `https://warmchain.co/c/${connectorUsername}`)}
     <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
-      Track all your requests from your <a href="https://warmchain.com/dashboard" style="color:#10b981;">dashboard</a>.
+      Track all your requests from your <a href="https://warmchain.co/dashboard" style="color:#10b981;">dashboard</a>.
     </p>`
   return base(content, `${connectorName} is ready to help you.`)
 }
@@ -135,9 +135,9 @@ function requestDeclined(founderCompany: string, connectorName: string) {
       <p style="margin:0 0 8px;font-size:14px;color:#d1d5db;">✓ Update your profile with recent traction</p>
       <p style="margin:0;font-size:14px;color:#d1d5db;">✓ The right intro is one request away</p>
     </div>
-    ${btn('Browse More Connectors →', 'https://warmchain.com/connectors')}
+    ${btn('Browse More Connectors →', 'https://warmchain.co/connectors')}
     <p style="margin:16px 0 0;font-size:13px;color:#6b7280;">
-      View all your requests in your <a href="https://warmchain.com/dashboard" style="color:#10b981;">dashboard</a>.
+      View all your requests in your <a href="https://warmchain.co/dashboard" style="color:#10b981;">dashboard</a>.
     </p>`
   return base(content, 'Keep reaching out — the right connector is out there.')
 }

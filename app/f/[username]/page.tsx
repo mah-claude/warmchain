@@ -117,7 +117,7 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
     '@type': 'Organization',
     name: profile.company_name,
     description: profile.one_liner,
-    url: `https://warmchain.com/f/${profile.username}`,
+    url: `https://warmchain.co/f/${profile.username}`,
     ...(profile.stage && { foundingDate: profile.stage }),
   }
 

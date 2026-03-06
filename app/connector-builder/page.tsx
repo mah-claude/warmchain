@@ -139,7 +139,7 @@ export default function ConnectorBuilder() {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Username <span className="text-emerald-400">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono">warmchain.com/connector/</span>
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono">warmchain.co/connector/</span>
                   <input type="text" value={formData.username}
                     onChange={e => !isEditing && set('username', e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
                     onFocus={() => setFocused('username')} onBlur={() => setFocused('')}

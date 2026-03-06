@@ -241,7 +241,7 @@ export default function Connectors() {
                       </div>
                       <div className="min-w-0">
                         <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors truncate">{connector.name}</h3>
-                        <p className="text-xs text-gray-500 font-mono truncate">warmchain.com/c/{connector.username}</p>
+                        <p className="text-xs text-gray-500 font-mono truncate">warmchain.co/c/{connector.username}</p>
                         {acceptRate !== null && (
                           <p className="text-xs text-emerald-400 mt-0.5">{acceptRate}% acceptance · {connector.accepted_requests} intros made</p>
                         )}

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/dashboard', '/builder', '/connector-builder', '/admin/', '/api/'],
       },
     ],
-    sitemap: 'https://warmchain.com/sitemap.xml',
+    sitemap: 'https://warmchain.co/sitemap.xml',
   }
 }

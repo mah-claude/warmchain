@@ -788,7 +788,7 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
             type: status === 'accepted' ? 'request_accepted' : 'request_declined',
             title: status === 'accepted' ? `${profile.name} accepted your intro request!` : `${profile.name} declined your intro request`,
             body: status === 'accepted'
-              ? `${profile.name} is ready to help. Connect with them at warmchain.com/c/${profile.username}`
+              ? `${profile.name} is ready to help. Connect with them at warmchain.co/c/${profile.username}`
               : `${profile.name} couldn't help this time. Keep reaching out to other connectors.`,
             request_id: req.id,
           }),
@@ -1000,7 +1000,7 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
             <div className="p-5 rounded-2xl border border-white/10 bg-white/[0.02] flex items-center justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold text-white">Your public profile</p>
-                <p className="text-xs text-gray-500 mt-0.5">warmchain.com/c/{profile.username}</p>
+                <p className="text-xs text-gray-500 mt-0.5">warmchain.co/c/{profile.username}</p>
               </div>
               <div className="flex gap-2">
                 <Link href={`/c/${profile.username}`} className="px-4 py-2 text-sm bg-white text-black font-semibold rounded-xl hover:bg-emerald-400 transition-all">View →</Link>

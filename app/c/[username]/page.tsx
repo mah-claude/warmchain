@@ -182,7 +182,7 @@ function ConnectorProfileInner({ username }: { username: string }) {
     '@type': 'Person',
     name: profile.name,
     description: profile.bio,
-    url: `https://warmchain.com/c/${profile.username}`,
+    url: `https://warmchain.co/c/${profile.username}`,
     ...(expertiseTags.length && { knowsAbout: expertiseTags }),
   }
 

@@ -44,7 +44,7 @@ export default function FAQ() {
       {
         id: 'how-works',
         q: "How does Warmchain work?",
-        a: "It's simple: (1) Create your profile in ~10 minutes. (2) Get a shareable link like warmchain.com/yourname. (3) Use that link every time you ask for an intro. Connectors see your full context on one page and can decide quickly whether to help."
+        a: "It's simple: (1) Create your profile in ~10 minutes. (2) Get a shareable link like warmchain.co/yourname. (3) Use that link every time you ask for an intro. Connectors see your full context on one page and can decide quickly whether to help."
       },
       {
         id: 'who-sees',
@@ -93,7 +93,7 @@ export default function FAQ() {
       {
         id: 'delete-account',
         q: "Can I delete my account?",
-        a: "Yes. Contact us at hello@warmchain.com and we'll delete your account and all associated data within 30 days."
+        a: "Yes. Contact us at hello@warmchain.co and we'll delete your account and all associated data within 30 days."
       },
       {
         id: 'secure',
@@ -125,7 +125,7 @@ export default function FAQ() {
       {
         id: 'api',
         q: "Do you have an API?",
-        a: "Not yet. If you're interested in API access, let us know at hello@warmchain.com."
+        a: "Not yet. If you're interested in API access, let us know at hello@warmchain.co."
       }
     ]
   }
@@ -304,7 +304,7 @@ export default function FAQ() {
             Can't find the answer you're looking for? We're here to help.
           </p>
           <a 
-            href="mailto:hello@warmchain.com"
+            href="mailto:hello@warmchain.co"
             className="inline-block px-10 py-4 bg-white text-black font-bold rounded-full hover:scale-105 hover:shadow-[0_0_40px_rgba(52,211,153,0.6)] transition-all duration-300"
           >
             Contact Support
@@ -338,7 +338,7 @@ export default function FAQ() {
               <h4 className="font-semibold mb-4 text-sm">Company</h4>
               <ul className="space-y-3 text-sm">
                 <li><Link href="/about" className="text-gray-500 hover:text-white transition-colors">About</Link></li>
-                <li><a href="mailto:hello@warmchain.com" className="text-gray-500 hover:text-white transition-colors">Contact</a></li>
+                <li><a href="mailto:hello@warmchain.co" className="text-gray-500 hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
           </div>

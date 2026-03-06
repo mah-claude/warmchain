@@ -165,7 +165,7 @@ export default function Builder() {
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">Username <span className="text-emerald-400">*</span></label>
                 <div className="relative">
-                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono">warmchain.com/</span>
+                  <span className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-500 text-sm font-mono">warmchain.co/</span>
                   <input
                     type="text"
                     value={formData.username}

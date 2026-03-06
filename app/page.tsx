@@ -249,7 +249,7 @@ export default function Home() {
                   {/* Browser bar */}
                   <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border-b border-white/10">
                     <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60"/><div className="w-3 h-3 rounded-full bg-yellow-500/60"/><div className="w-3 h-3 rounded-full bg-green-500/60"/></div>
-                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.com/builder</div>
+                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.co/builder</div>
                   </div>
                   <div className="p-6 space-y-4">
                     <div className="flex gap-2 mb-2">
@@ -297,10 +297,10 @@ export default function Home() {
                   Share your link everywhere
                 </h4>
                 <p className="text-lg text-gray-400 mb-8 leading-relaxed">
-                  Get a clean URL like warmchain.com/yourname. Use it for every intro request instead of sending decks, PDFs, or long explanations.
+                  Get a clean URL like warmchain.co/yourname. Use it for every intro request instead of sending decks, PDFs, or long explanations.
                 </p>
                 <div className="p-6 rounded-xl bg-white/[0.06] border border-white/10 font-mono text-sm text-emerald-400 shadow-[0_0_0_1px_rgba(255,255,255,0.05)] transition-all duration-300 hover:border-emerald-500/20">
-                  warmchain.com/airbnb
+                  warmchain.co/airbnb
                 </div>
               </div>
               {/* Mockup: Public profile */}
@@ -308,7 +308,7 @@ export default function Home() {
                 <div className="relative rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(52,211,153,0.08)] overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border-b border-white/10">
                     <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60"/><div className="w-3 h-3 rounded-full bg-yellow-500/60"/><div className="w-3 h-3 rounded-full bg-green-500/60"/></div>
-                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.com/f/acmeinc</div>
+                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.co/f/acmeinc</div>
                   </div>
                   <div className="p-6">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs mb-3">
@@ -368,7 +368,7 @@ export default function Home() {
                 <div className="relative rounded-2xl border border-white/10 bg-zinc-950 shadow-[0_24px_48px_-12px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)] overflow-hidden">
                   <div className="flex items-center gap-2 px-4 py-3 bg-zinc-900 border-b border-white/10">
                     <div className="flex gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500/60"/><div className="w-3 h-3 rounded-full bg-yellow-500/60"/><div className="w-3 h-3 rounded-full bg-green-500/60"/></div>
-                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.com/dashboard</div>
+                    <div className="flex-1 mx-3 px-3 py-1 bg-white/5 rounded text-xs text-gray-500 font-mono">warmchain.co/dashboard</div>
                   </div>
                   <div className="p-5">
                     <div className="flex items-center justify-between mb-4">
@@ -529,7 +529,7 @@ export default function Home() {
               <h4 className="font-semibold mb-4 text-sm text-white/90">Company</h4>
               <ul className="space-y-3 text-sm">
                 <li><Link href="/about" className="text-gray-500 hover:text-white transition-colors duration-300">About</Link></li>
-                <li><a href="mailto:hello@warmchain.com" className="text-gray-500 hover:text-white transition-colors duration-300">Contact</a></li>
+                <li><a href="mailto:hello@warmchain.co" className="text-gray-500 hover:text-white transition-colors duration-300">Contact</a></li>
               </ul>
             </div>
           </div>

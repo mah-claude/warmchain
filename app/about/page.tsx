@@ -245,7 +245,7 @@ export default function About() {
             Create Your Profile — Free
           </Link>
           <p className="mt-6 text-sm text-gray-500">
-            Or reach out: <a href="mailto:hello@warmchain.com" className="text-emerald-400 hover:text-emerald-300">hello@warmchain.com</a>
+            Or reach out: <a href="mailto:hello@warmchain.co" className="text-emerald-400 hover:text-emerald-300">hello@warmchain.co</a>
           </p>
         </div>
       </section>
@@ -277,7 +277,7 @@ export default function About() {
               <h4 className="font-semibold mb-4 text-sm">Company</h4>
               <ul className="space-y-3 text-sm">
                 <li><Link href="/about" className="text-gray-500 hover:text-white transition-colors">About</Link></li>
-                <li><a href="mailto:hello@warmchain.com" className="text-gray-500 hover:text-white transition-colors">Contact</a></li>
+                <li><a href="mailto:hello@warmchain.co" className="text-gray-500 hover:text-white transition-colors">Contact</a></li>
               </ul>
             </div>
           </div>
