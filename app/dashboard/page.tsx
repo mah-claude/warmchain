@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -8,7 +8,7 @@ import {
   CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { createClient } from '@/lib/supabase'
-import { Profile, ConnectorProfile, IntroRequest, Notification, NEEDS_OPTIONS, HELPS_WITH_OPTIONS, EXPERTISE_OPTIONS } from '@/lib/types'
+import { Profile, ConnectorProfile, IntroRequest, Notification, NEEDS_OPTIONS, HELPS_WITH_OPTIONS, EXPERTISE_OPTIONS, STAGES } from '@/lib/types'
 
 // ─── Profile completeness ──────────────────────────────────────────────────────
 
@@ -722,13 +722,22 @@ function FounderDashboard({ profile }: { profile: Profile }) {
 
 function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'pending' | 'history' | 'stats'>('pending')
+  const [activeTab, setActiveTab] = useState<'pending' | 'history' | 'stats' | 'founders'>('pending')
   const [requests, setRequests] = useState<(IntroRequest & { founder_company?: string; founder_one_liner?: string; founder_stage?: string; founder_user_id_val?: string })[]>([])
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [viewCount, setViewCount] = useState(0)
   const [requestsChart, setRequestsChart] = useState<ChartPoint[]>([])
   const [updating, setUpdating] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+
+  // Browse Founders state
+  const [founders, setFounders] = useState<Profile[]>([])
+  const [foundersLoading, setFoundersLoading] = useState(false)
+  const [foundersLoaded, setFoundersLoaded] = useState(false)
+  const [founderSearch, setFounderSearch] = useState('')
+  const [founderStage, setFounderStage] = useState('')
+  const [founderNeeds, setFounderNeeds] = useState('')
+  const [founderPage, setFounderPage] = useState(0)
 
   const load = useCallback(async () => {
     const supabase = createClient()
@@ -767,6 +776,30 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
   }, [profile.username])
 
   useEffect(() => { load() }, [load])
+
+  // Lazy-load founders when tab is activated
+  useEffect(() => {
+    if (activeTab !== 'founders' || foundersLoaded) return
+    setFoundersLoading(true)
+    createClient().from('profiles').select('*').order('created_at', { ascending: false })
+      .then(({ data }) => { setFounders(data ?? []); setFoundersLoaded(true); setFoundersLoading(false) })
+  }, [activeTab, foundersLoaded])
+
+  useEffect(() => { setFounderPage(0) }, [founderSearch, founderStage, founderNeeds])
+
+  const filteredFounders = useMemo(() => founders.filter(f => {
+    if (founderStage && f.stage !== founderStage) return false
+    if (founderNeeds && !f.needs?.split(',').includes(founderNeeds)) return false
+    if (founderSearch) {
+      const q = founderSearch.toLowerCase()
+      if (!`${f.company_name} ${f.one_liner} ${f.traction} ${f.needs}`.toLowerCase().includes(q)) return false
+    }
+    return true
+  }), [founders, founderSearch, founderStage, founderNeeds])
+
+  const FOUNDER_PAGE_SIZE = 12
+  const founderTotalPages = Math.ceil(filteredFounders.length / FOUNDER_PAGE_SIZE)
+  const paginatedFounders = filteredFounders.slice(founderPage * FOUNDER_PAGE_SIZE, (founderPage + 1) * FOUNDER_PAGE_SIZE)
 
   const handleSignOut = async () => { await createClient().auth.signOut(); router.push('/') }
 
@@ -860,6 +893,7 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
           <Tab label="Pending" active={activeTab === 'pending'} onClick={() => setActiveTab('pending')} badge={pending.length} />
           <Tab label="History" active={activeTab === 'history'} onClick={() => setActiveTab('history')} />
           <Tab label="Analytics" active={activeTab === 'stats'} onClick={() => setActiveTab('stats')} />
+          <Tab label="Find Founders" active={activeTab === 'founders'} onClick={() => setActiveTab('founders')} />
         </div>
 
         {/* ── Pending Tab ── */}
@@ -1006,6 +1040,111 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
                 <Link href={`/c/${profile.username}`} className="px-4 py-2 text-sm bg-white text-black font-semibold rounded-xl hover:bg-emerald-400 transition-all">View →</Link>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ── Find Founders Tab ── */}
+        {activeTab === 'founders' && (
+          <div>
+            {/* Search + filters */}
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="relative flex-1">
+                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input type="text" value={founderSearch} onChange={e => setFounderSearch(e.target.value)}
+                  placeholder="Search by company, one-liner…"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+              </div>
+              <select value={founderStage} onChange={e => setFounderStage(e.target.value)}
+                className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                <option value="" className="bg-zinc-900">All stages</option>
+                {STAGES.map(s => <option key={s} value={s} className="bg-zinc-900">{s}</option>)}
+              </select>
+              <select value={founderNeeds} onChange={e => setFounderNeeds(e.target.value)}
+                className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-emerald-500 cursor-pointer">
+                <option value="" className="bg-zinc-900">All needs</option>
+                {NEEDS_OPTIONS.map(o => <option key={o.value} value={o.value} className="bg-zinc-900">{o.label}</option>)}
+              </select>
+              {(founderSearch || founderStage || founderNeeds) && (
+                <button type="button" onClick={() => { setFounderSearch(''); setFounderStage(''); setFounderNeeds('') }}
+                  className="px-3 py-2.5 text-sm text-gray-400 hover:text-white transition-colors whitespace-nowrap">Clear ×</button>
+              )}
+            </div>
+
+            <p className="text-sm text-gray-500 mb-5">
+              {foundersLoading ? 'Loading…' : `${filteredFounders.length} founder${filteredFounders.length !== 1 ? 's' : ''} found`}
+            </p>
+
+            {foundersLoading ? (
+              <div className="flex justify-center py-16"><div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" /></div>
+            ) : paginatedFounders.length === 0 ? (
+              <div className="text-center py-16">
+                <div className="text-4xl mb-3">🔍</div>
+                <p className="text-gray-400">{founders.length === 0 ? 'No founder profiles yet' : 'No founders match your filters'}</p>
+                {(founderSearch || founderStage || founderNeeds) && (
+                  <button type="button" onClick={() => { setFounderSearch(''); setFounderStage(''); setFounderNeeds('') }}
+                    className="text-sm text-emerald-400 hover:text-emerald-300 mt-3 transition-colors">Clear filters →</button>
+                )}
+              </div>
+            ) : (
+              <>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  {paginatedFounders.map(founder => {
+                    const needsTags = founder.needs?.split(',').filter(Boolean).map(v => NEEDS_OPTIONS.find(o => o.value === v)?.label ?? v) ?? []
+                    return (
+                      <div key={founder.id} className="group p-6 rounded-2xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.04] hover:border-white/20 transition-all flex flex-col">
+                        <div className="flex items-start gap-4 mb-4">
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-black font-bold text-lg flex-shrink-0">
+                            {founder.company_name?.charAt(0) ?? '?'}
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="font-semibold text-white group-hover:text-emerald-400 transition-colors truncate">{founder.company_name}</h3>
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-white/5 text-gray-400 border border-white/10">{founder.stage}</span>
+                          </div>
+                        </div>
+                        <p className="text-sm text-gray-400 leading-relaxed mb-4 line-clamp-2">{founder.one_liner}</p>
+                        {(founder.mrr || founder.users_count || founder.growth) && (
+                          <div className="flex gap-2 flex-wrap mb-4">
+                            {founder.mrr && <span className="px-2 py-0.5 text-xs rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{founder.mrr} MRR</span>}
+                            {founder.users_count && <span className="px-2 py-0.5 text-xs rounded-full bg-white/5 text-gray-400 border border-white/10">{founder.users_count} users</span>}
+                            {founder.growth && <span className="px-2 py-0.5 text-xs rounded-full bg-white/5 text-gray-400 border border-white/10">{founder.growth}</span>}
+                          </div>
+                        )}
+                        {needsTags.length > 0 && (
+                          <div className="mb-4">
+                            <p className="text-xs text-gray-500 mb-1.5">Looking for</p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {needsTags.map(t => <span key={t} className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{t}</span>)}
+                            </div>
+                          </div>
+                        )}
+                        <div className="mt-auto pt-4">
+                          <Link href={`/f/${founder.username}`}
+                            className="block w-full text-center py-2 text-sm bg-white text-black font-semibold rounded-lg hover:bg-emerald-400 transition-all">
+                            View Profile →
+                          </Link>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {founderTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-10">
+                    <button type="button" onClick={() => setFounderPage(p => Math.max(0, p - 1))} disabled={founderPage === 0}
+                      className="px-4 py-2 text-sm border border-white/20 text-gray-300 rounded-xl hover:bg-white/5 disabled:opacity-40 transition-all">← Prev</button>
+                    {Array.from({ length: founderTotalPages }).map((_, i) => (
+                      <button type="button" key={i} onClick={() => setFounderPage(i)}
+                        className={`w-9 h-9 rounded-xl text-sm font-medium transition-all ${founderPage === i ? 'bg-emerald-500 text-black' : 'border border-white/20 text-gray-400 hover:bg-white/5'}`}>
+                        {i + 1}
+                      </button>
+                    ))}
+                    <button type="button" onClick={() => setFounderPage(p => Math.min(founderTotalPages - 1, p + 1))} disabled={founderPage === founderTotalPages - 1}
+                      className="px-4 py-2 text-sm border border-white/20 text-gray-300 rounded-xl hover:bg-white/5 disabled:opacity-40 transition-all">Next →</button>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
       </div>
