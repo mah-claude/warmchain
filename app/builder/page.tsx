@@ -149,6 +149,7 @@ export default function Builder() {
           {STEPS.map(s => (
             <button
               key={s.number}
+              type="button"
               onClick={() => setStep(s.number)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${step === s.number ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-gray-500 hover:text-gray-300'}`}
             >

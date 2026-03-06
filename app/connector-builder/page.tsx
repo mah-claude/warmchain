@@ -125,7 +125,7 @@ export default function ConnectorBuilder() {
 
         <div className="flex gap-2 mb-10">
           {STEPS.map(s => (
-            <button key={s.number} onClick={() => setStep(s.number)}
+            <button key={s.number} type="button" onClick={() => setStep(s.number)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${step === s.number ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30' : 'text-gray-500 hover:text-gray-300'}`}>
               <span className={`w-5 h-5 rounded-full flex items-center justify-center text-xs ${step === s.number ? 'bg-emerald-500 text-black' : 'bg-white/10'}`}>{s.number}</span>
               {s.label}
