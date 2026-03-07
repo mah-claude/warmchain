@@ -6,7 +6,11 @@ import { randomUUID } from 'crypto'
 
 export async function GET(req: NextRequest) {
   if (!process.env.NOTION_CLIENT_ID) {
-    return NextResponse.json({ error: 'Notion integration not configured' }, { status: 503 })
+    // Redirect back to the referrer with an error param instead of returning raw JSON
+    const from = req.headers.get('referer') ?? 'https://warmchain.co/settings/integrations'
+    const dest = new URL(from)
+    dest.searchParams.set('error', 'notion_not_configured')
+    return NextResponse.redirect(dest.toString())
   }
 
   let userId: string | null = null

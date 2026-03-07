@@ -389,7 +389,7 @@ function FounderDashboard({ profile }: { profile: Profile }) {
             <p className="text-gray-400 text-sm">{profile.one_liner}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/builder" className="hidden sm:block px-4 py-2 text-sm border border-white/20 text-gray-300 rounded-xl hover:bg-white/5 transition-all">
+            <Link href="/settings/profile" className="hidden sm:block px-4 py-2 text-sm border border-white/20 text-gray-300 rounded-xl hover:bg-white/5 transition-all">
               Edit Profile
             </Link>
             <Link href={`/f/${profile.username}`}
@@ -400,7 +400,7 @@ function FounderDashboard({ profile }: { profile: Profile }) {
         </div>
 
         {/* Profile completeness */}
-        <CompletenessBar {...founderCompleteness(profile)} editHref="/builder" />
+        <CompletenessBar {...founderCompleteness(profile)} editHref="/settings/profile" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap">
@@ -560,7 +560,7 @@ function FounderDashboard({ profile }: { profile: Profile }) {
                     <p className="text-sm font-medium text-gray-500">Connect your GitHub repo</p>
                     <p className="text-xs text-gray-600 mt-1">Show recent commits to impress connectors</p>
                   </div>
-                  <Link href="/builder" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">Add repo in profile →</Link>
+                  <Link href="/settings/profile" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">Add repo in profile →</Link>
                 </div>
               )}
             </div>
@@ -882,7 +882,7 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
             <p className="text-gray-400 text-sm">{profile.bio?.slice(0, 80)}{profile.bio?.length > 80 ? '…' : ''}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/connector-builder" className="hidden sm:block px-4 py-2 text-sm border border-white/20 text-gray-300 rounded-xl hover:bg-white/5 transition-all">Edit Profile</Link>
+            <Link href="/settings/profile" className="hidden sm:block px-4 py-2 text-sm border border-white/20 text-gray-300 rounded-xl hover:bg-white/5 transition-all">Edit Profile</Link>
             <Link href={`/c/${profile.username}`} className="px-4 py-2 text-sm bg-white text-black font-semibold rounded-xl hover:bg-emerald-400 transition-all">View Profile →</Link>
           </div>
         </div>
@@ -896,7 +896,7 @@ function ConnectorDashboard({ profile }: { profile: ConnectorProfile }) {
         </div>
 
         {/* Profile completeness */}
-        <CompletenessBar {...connectorCompleteness(profile)} editHref="/connector-builder" />
+        <CompletenessBar {...connectorCompleteness(profile)} editHref="/settings/profile" />
 
         {/* Tabs */}
         <div className="flex gap-2 mb-8 flex-wrap">
