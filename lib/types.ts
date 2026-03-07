@@ -14,6 +14,14 @@ export type Profile = {
   team: string | null
   links: string | null
   github_repo: string | null
+  // URL-based integrations
+  yc_batch: string | null
+  linkedin_url: string | null
+  notion_url: string | null
+  pitch_url: string | null
+  docsend_url: string | null
+  linear_url: string | null
+  producthunt_url: string | null
   created_at: string
 }
 

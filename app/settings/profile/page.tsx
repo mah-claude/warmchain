@@ -27,7 +27,6 @@ export default function EditProfile() {
     ask: '',
     team: '',
     links: '',
-    github_repo: '',
   })
 
   useEffect(() => {
@@ -50,7 +49,6 @@ export default function EditProfile() {
         ask: data.ask ?? '',
         team: data.team ?? '',
         links: data.links ?? '',
-        github_repo: data.github_repo ?? '',
       })
       setLoading(false)
     }
@@ -95,7 +93,6 @@ export default function EditProfile() {
         ask: form.ask,
         team: form.team || null,
         links: form.links || null,
-        github_repo: form.github_repo || null,
       }).eq('user_id', user.id)
       if (err) throw err
       setSaved(true)
@@ -335,33 +332,23 @@ export default function EditProfile() {
 
           {/* ── Integrations ── */}
           <section>
-            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-5">Integrations</h2>
-            <div className="space-y-4">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Integrations</h2>
+              <Link href="/settings/integrations" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+                Manage all →
+              </Link>
+            </div>
+            <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/[0.02]">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1.5">GitHub repo</label>
-                <input
-                  type="text"
-                  value={form.github_repo}
-                  onChange={e => set('github_repo', e.target.value)}
-                  onFocus={() => setFocused('github_repo')} onBlur={() => setFocused('')}
-                  placeholder="owner/repo-name"
-                  className={inp(focused === 'github_repo')} maxLength={100}
-                />
-                <p className="text-xs text-gray-600 mt-1.5">Shows recent commits on your profile. Format: owner/repo</p>
+                <p className="text-sm font-medium text-gray-300">GitHub, Notion, LinkedIn, YC, Pitch &amp; more</p>
+                <p className="text-xs text-gray-600 mt-0.5">Connect tools to enrich your investor profile — all URL-based, no OAuth</p>
               </div>
-
-              <div className="flex items-center justify-between p-4 rounded-xl border border-white/10 bg-white/[0.02]">
-                <div>
-                  <p className="text-sm font-medium text-gray-300">Notion</p>
-                  <p className="text-xs text-gray-600 mt-0.5">Sync a Notion page as your pitch deck</p>
-                </div>
-                <Link
-                  href="/settings/integrations"
-                  className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors font-medium"
-                >
-                  Manage →
-                </Link>
-              </div>
+              <Link
+                href="/settings/integrations"
+                className="px-3 py-1.5 text-xs text-white border border-white/15 rounded-lg hover:bg-white/5 transition-colors flex-shrink-0 ml-3"
+              >
+                Open →
+              </Link>
             </div>
           </section>
 

@@ -20,17 +20,17 @@ type Profile = {
   growth: string | null
   user_id: string
   github_repo: string | null
+  // integrations
+  yc_batch: string | null
+  linkedin_url: string | null
+  notion_url: string | null
+  pitch_url: string | null
+  docsend_url: string | null
+  linear_url: string | null
+  producthunt_url: string | null
 }
 
-type NotionSnapshot = {
-  rendered_html: string
-  page_title: string
-  word_count: number
-  synced_at: string
-  version: number
-}
-
-type Tab = 'overview' | 'snapshot' | 'updates' | 'ask'
+type Tab = 'overview' | 'deck' | 'updates' | 'ask'
 
 function timeAgo(iso: string): string {
   const d = (Date.now() - new Date(iso).getTime()) / 1000
@@ -48,23 +48,168 @@ function MetricChip({ label, value }: { label: string; value: string }) {
   )
 }
 
-function TabBtn({ label, active, onClick, badge }: { label: string; active: boolean; onClick: () => void; badge?: string }) {
+function TabBtn({ label, active, onClick, dot }: { label: string; active: boolean; onClick: () => void; dot?: boolean }) {
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${active
-        ? 'text-white bg-white/10'
-        : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
+      className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap ${
+        active ? 'text-white bg-white/10' : 'text-gray-500 hover:text-gray-300 hover:bg-white/5'
       }`}
     >
       {label}
-      {badge && (
-        <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">{badge}</span>
-      )}
+      {dot && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />}
     </button>
   )
 }
 
+// ── Integration icon links ─────────────────────────────────────────────────
+function IntegrationLinks({ profile }: { profile: Profile }) {
+  const links = [
+    profile.linkedin_url && {
+      url: profile.linkedin_url, label: 'LinkedIn',
+      icon: <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />,
+    },
+    profile.github_repo && {
+      url: `https://github.com/${profile.github_repo}`, label: 'GitHub',
+      icon: <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />,
+    },
+    profile.producthunt_url && {
+      url: profile.producthunt_url, label: 'Product Hunt',
+      icon: <path d="M13.604 8.4h-3.405V12h3.405a1.8 1.8 0 000-3.6M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0m1.604 14.4H10.2v3.6H7.8V6h5.804a4.2 4.2 0 010 8.4" />,
+    },
+    profile.linear_url && {
+      url: profile.linear_url, label: 'Roadmap',
+      icon: <path d="M3.526 10.028L13.97 20.472l-.338.326A10.5 10.5 0 013.526 10.028zm-.5-1.044a10.5 10.5 0 0012.432 12.432L3.026 8.984zm1.327-2.47l13.13 13.13a10.5 10.5 0 00-13.13-13.13zm1.413-1.061A10.5 10.5 0 0120.05 20.233L5.766 5.453zm2.062-1.113L20.49 18.51A10.5 10.5 0 007.828 4.34zm2.46-1.065L20.875 14.85a10.5 10.5 0 00-10.587-11.575zm3.12-.607l8.672 8.672A10.5 10.5 0 0013.408 3.668zm3.902-.08a10.5 10.5 0 014.97 4.956L17.31 3.588z" />,
+    },
+  ].filter(Boolean) as { url: string; label: string; icon: React.ReactNode }[]
+
+  if (!links.length) return null
+
+  return (
+    <div className="flex flex-wrap gap-2 mb-6">
+      {links.map(({ url, label, icon }) => (
+        <a
+          key={label}
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-white/10 bg-white/[0.03] hover:border-white/25 hover:bg-white/8 transition-all text-xs text-gray-400 hover:text-white"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-3.5 h-3.5">
+            {icon}
+          </svg>
+          {label}
+        </a>
+      ))}
+    </div>
+  )
+}
+
+// ── Deck display ───────────────────────────────────────────────────────────
+function DeckView({ profile, isOwner }: { profile: Profile; isOwner: boolean }) {
+  const [embedError, setEmbedError] = useState(false)
+
+  // Priority: Pitch (embeddable) > Notion (try embed) > Docsend (link only)
+  const pitchUrl = profile.pitch_url
+  const notionUrl = profile.notion_url
+  const docsendUrl = profile.docsend_url
+
+  const hasDeck = pitchUrl || notionUrl || docsendUrl
+
+  if (!hasDeck) {
+    return (
+      <div className="text-center py-16">
+        <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-7 h-7 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3v11.25A2.25 2.25 0 006 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0118 16.5h-2.25m-7.5 0h7.5m-7.5 0l-1 3m8.5-3l1 3m0 0l.5 1.5m-.5-1.5h-9.5m0 0l-.5 1.5" />
+          </svg>
+        </div>
+        <p className="text-gray-400 text-sm mb-1">No deck connected</p>
+        {isOwner ? (
+          <>
+            <p className="text-gray-600 text-xs mb-4">Connect Notion, Pitch, or Docsend from your integrations.</p>
+            <Link href="/settings/integrations" className="px-5 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all text-sm inline-block">
+              Add deck →
+            </Link>
+          </>
+        ) : (
+          <p className="text-gray-600 text-xs">This founder hasn&apos;t connected a deck yet.</p>
+        )}
+      </div>
+    )
+  }
+
+  // Try Pitch embed first (they officially support embeds)
+  if (pitchUrl && !embedError) {
+    // Convert pitch.com/public/... to embed URL if needed
+    const embedSrc = pitchUrl.replace('pitch.com/public/', 'pitch.com/embed/')
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Pitch deck</p>
+          <a href={pitchUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+            Open in Pitch ↗
+          </a>
+        </div>
+        <div className="relative w-full rounded-2xl overflow-hidden border border-white/10" style={{ paddingBottom: '56.25%' }}>
+          <iframe
+            src={embedSrc}
+            className="absolute inset-0 w-full h-full"
+            allowFullScreen
+            onError={() => setEmbedError(true)}
+          />
+        </div>
+      </div>
+    )
+  }
+
+  // Notion — try embed
+  if (notionUrl && !embedError) {
+    return (
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">Notion page</p>
+          <a href={notionUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+            Open in Notion ↗
+          </a>
+        </div>
+        <div className="relative w-full rounded-2xl overflow-hidden border border-white/10" style={{ paddingBottom: '75%' }}>
+          <iframe
+            src={notionUrl}
+            className="absolute inset-0 w-full h-full bg-white"
+            onError={() => setEmbedError(true)}
+          />
+        </div>
+        <p className="text-xs text-gray-600 mt-2 text-center">If the page doesn&apos;t load, make sure &ldquo;Share to web&rdquo; is enabled in Notion.</p>
+      </div>
+    )
+  }
+
+  // Docsend or fallback — just a prominent link
+  const deckUrl = docsendUrl ?? notionUrl ?? pitchUrl ?? ''
+  const deckLabel = docsendUrl ? 'Docsend' : notionUrl ? 'Notion' : 'Pitch'
+  return (
+    <div className="text-center py-12">
+      <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
+        <svg className="w-7 h-7 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+        </svg>
+      </div>
+      <p className="text-gray-300 text-sm font-medium mb-1">Investor deck on {deckLabel}</p>
+      <p className="text-gray-500 text-xs mb-5">Opens in a new tab</p>
+      <a
+        href={deckUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="px-6 py-3 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all text-sm inline-block"
+      >
+        View deck ↗
+      </a>
+    </div>
+  )
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 export default function FounderPublicProfile({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
 
@@ -75,38 +220,28 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
   const [viewCount, setViewCount] = useState<number | null>(null)
   const [tab, setTab] = useState<Tab>('overview')
 
-  // Auth
   const [isOwner, setIsOwner] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [isFounder, setIsFounder] = useState(false)
 
-  // Notion snapshot
-  const [snapshot, setSnapshot] = useState<NotionSnapshot | null>(null)
-  const [snapshotLoading, setSnapshotLoading] = useState(false)
-
   useEffect(() => {
     const load = async () => {
       const supabase = createClient()
-
       const [profileResult, userResult] = await Promise.all([
         supabase.from('profiles').select('*').eq('username', username).single(),
         supabase.auth.getUser(),
       ])
-
       const data = profileResult.data
       const user = userResult.data.user
-
       if (user) {
         setIsLoggedIn(true)
         if (data && data.user_id === user.id) {
           setIsOwner(true)
         } else {
-          // Check if viewer is a founder
           const { data: fp } = await supabase.from('profiles').select('username').eq('user_id', user.id).single()
           if (fp) setIsFounder(true)
         }
       }
-
       if (data) {
         setProfile(data)
         if (!user || data.user_id !== user.id) {
@@ -128,24 +263,6 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
     }
     load()
   }, [username])
-
-  // Load snapshot when Snapshot tab opened
-  useEffect(() => {
-    if (tab !== 'snapshot' || snapshot !== null || snapshotLoading) return
-    const load = async () => {
-      setSnapshotLoading(true)
-      const supabase = createClient()
-      const { data } = await supabase
-        .from('notion_snapshots')
-        .select('rendered_html, page_title, word_count, synced_at, version')
-        .eq('founder_username', username)
-        .eq('is_current', true)
-        .single()
-      setSnapshot(data ?? null)
-      setSnapshotLoading(false)
-    }
-    load()
-  }, [tab, username, snapshot, snapshotLoading])
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href)
@@ -187,6 +304,7 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
 
   const needsList = profile.needs?.split(',').filter(Boolean).map(v => NEEDS_OPTIONS.find(o => o.value === v)?.label ?? v) ?? []
   const hasMetrics = !!(profile.mrr || profile.users_count || profile.growth || profile.stage)
+  const hasDeck = !!(profile.pitch_url || profile.notion_url || profile.docsend_url)
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -208,7 +326,7 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
               👁 Investor view — this is how connectors see your profile
             </span>
             <div className="flex items-center gap-3">
-              <Link href="/builder" className="text-emerald-500 hover:text-emerald-400 transition-colors underline underline-offset-2 text-xs">
+              <Link href="/settings/profile" className="text-emerald-500 hover:text-emerald-400 transition-colors underline underline-offset-2 text-xs">
                 Edit profile
               </Link>
               <Link href="/settings/integrations" className="text-emerald-500 hover:text-emerald-400 transition-colors text-xs">
@@ -230,7 +348,7 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
             {isOwner ? (
               <>
                 <Link href="/dashboard" className="text-sm text-gray-500 hover:text-white transition-colors hidden sm:block">← Dashboard</Link>
-                <Link href="/builder" className="px-4 py-2 bg-white/10 border border-white/20 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-white/15 transition-all">
+                <Link href="/settings/profile" className="px-4 py-2 bg-white/10 border border-white/20 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-white/15 transition-all">
                   Edit Profile
                 </Link>
               </>
@@ -256,10 +374,10 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
         <div className="grid lg:grid-cols-[1fr_280px] gap-6">
 
-          {/* ── Left column — main content ── */}
+          {/* ── Left column ── */}
           <div className="min-w-0">
             {/* Company header */}
-            <div className="mb-6">
+            <div className="mb-5">
               <div className="flex items-center gap-2 mb-3">
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -268,6 +386,12 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                 {profile.stage && (
                   <span className="text-xs px-2.5 py-1 rounded-full border border-white/10 text-gray-400">{profile.stage}</span>
                 )}
+                {/* YC badge */}
+                {profile.yc_batch && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-500/15 border border-orange-500/30 text-orange-300 text-xs font-bold">
+                    YC {profile.yc_batch}
+                  </span>
+                )}
               </div>
               <h1 className="text-4xl sm:text-5xl font-bold text-white mb-2 tracking-tight">{profile.company_name}</h1>
               <p className="text-xl text-gray-400 font-light leading-relaxed">{profile.one_liner}</p>
@@ -275,7 +399,7 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
 
             {/* Metrics row */}
             {hasMetrics && (
-              <div className="flex flex-wrap gap-2 mb-6">
+              <div className="flex flex-wrap gap-2 mb-5">
                 {profile.mrr && <MetricChip label="MRR" value={profile.mrr} />}
                 {profile.users_count && <MetricChip label="Users" value={profile.users_count} />}
                 {profile.growth && <MetricChip label="Growth" value={profile.growth} />}
@@ -283,10 +407,13 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
               </div>
             )}
 
+            {/* Integration links */}
+            <IntegrationLinks profile={profile} />
+
             {/* Tabs */}
             <div className="flex items-center gap-1 border-b border-white/10 mb-6 overflow-x-auto pb-px">
               <TabBtn label="Overview" active={tab === 'overview'} onClick={() => setTab('overview')} />
-              <TabBtn label="Snapshot" active={tab === 'snapshot'} onClick={() => setTab('snapshot')} badge={snapshot ? 'N' : undefined} />
+              {hasDeck && <TabBtn label="Deck" active={tab === 'deck'} onClick={() => setTab('deck')} dot />}
               <TabBtn label="Updates" active={tab === 'updates'} onClick={() => setTab('updates')} />
               <TabBtn label="The Ask" active={tab === 'ask'} onClick={() => setTab('ask')} />
             </div>
@@ -298,14 +425,12 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                   <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Traction</h2>
                   <p className="text-gray-300 leading-relaxed whitespace-pre-line">{profile.traction}</p>
                 </div>
-
                 {profile.team && (
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Team</h2>
                     <p className="text-gray-300 leading-relaxed whitespace-pre-line">{profile.team}</p>
                   </div>
                 )}
-
                 {needsList.length > 0 && (
                   <div className="p-6 rounded-2xl bg-white/5 border border-white/10">
                     <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Looking For</h2>
@@ -319,53 +444,8 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
               </div>
             )}
 
-            {/* ── Tab: Snapshot (Notion) ── */}
-            {tab === 'snapshot' && (
-              <div>
-                {snapshotLoading ? (
-                  <div className="flex items-center justify-center py-20">
-                    <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                ) : snapshot ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-5">
-                      <div>
-                        <p className="text-sm font-medium text-white">{snapshot.page_title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">{snapshot.word_count} words · synced {timeAgo(snapshot.synced_at)} · v{snapshot.version}</p>
-                      </div>
-                      {isOwner && (
-                        <Link href="/settings/integrations" className="text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 px-3 py-1.5 rounded-lg transition-colors">
-                          Manage →
-                        </Link>
-                      )}
-                    </div>
-                    <div
-                      className="notion-render prose-notion"
-                      dangerouslySetInnerHTML={{ __html: snapshot.rendered_html }}
-                    />
-                  </div>
-                ) : (
-                  <div className="text-center py-16">
-                    <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M4.459 4.208c.746.606 1.026.56 2.428.469l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466L4.459 4.208zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.934zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933l3.222-.187z"/>
-                      </svg>
-                    </div>
-                    <p className="text-gray-400 text-sm mb-1">No Notion snapshot yet</p>
-                    {isOwner ? (
-                      <>
-                        <p className="text-gray-600 text-xs mb-4">Connect Notion and sync your investor update to share it here.</p>
-                        <Link href="/settings/integrations" className="px-5 py-2.5 bg-white text-black font-bold rounded-xl hover:bg-emerald-400 transition-all text-sm inline-block">
-                          Connect Notion →
-                        </Link>
-                      </>
-                    ) : (
-                      <p className="text-gray-600 text-xs">This founder hasn&apos;t connected a Notion page yet.</p>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* ── Tab: Deck ── */}
+            {tab === 'deck' && <DeckView profile={profile} isOwner={isOwner} />}
 
             {/* ── Tab: Updates (GitHub) ── */}
             {tab === 'updates' && (
@@ -375,8 +455,24 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                     <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
                   </svg>
                 </div>
-                <p className="text-gray-400 text-sm mb-1">GitHub integration coming soon</p>
-                <p className="text-gray-600 text-xs">Commits, activity, and releases — all inside Warmchain.</p>
+                {profile.github_repo ? (
+                  <>
+                    <p className="text-gray-400 text-sm mb-1">GitHub activity</p>
+                    <a href={`https://github.com/${profile.github_repo}`} target="_blank" rel="noopener noreferrer"
+                      className="text-emerald-400 text-xs font-mono hover:underline">
+                      github.com/{profile.github_repo} ↗
+                    </a>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-gray-400 text-sm mb-1">No GitHub connected</p>
+                    {isOwner && (
+                      <Link href="/settings/integrations" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors">
+                        Add GitHub →
+                      </Link>
+                    )}
+                  </>
+                )}
               </div>
             )}
 
@@ -391,7 +487,6 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                     The Ask
                   </h2>
                   <p className="text-lg text-white leading-relaxed whitespace-pre-line">{profile.ask}</p>
-
                   {needsList.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-4">
                       {needsList.map(n => (
@@ -400,8 +495,6 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                     </div>
                   )}
                 </div>
-
-                {/* CTA for founders/visitors */}
                 {!isOwner && (
                   <div className="p-5 rounded-2xl bg-white/5 border border-white/10 text-center">
                     {isLoggedIn && isFounder ? (
@@ -425,9 +518,8 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
             )}
           </div>
 
-          {/* ── Right column — Fast Scan panel ── */}
+          {/* ── Right column — Fast Scan ── */}
           <div className="lg:sticky lg:top-[73px] self-start space-y-3">
-            {/* 30-sec card */}
             <div className="rounded-2xl bg-white/5 border border-white/10 overflow-hidden">
               <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
                 <span className="text-xs font-semibold text-gray-400 uppercase tracking-wider">30-sec scan</span>
@@ -468,9 +560,25 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                     </div>
                   </div>
                 )}
+                {/* Connected integrations quick list */}
+                {(profile.yc_batch || profile.linkedin_url || profile.producthunt_url || hasDeck) && (
+                  <div>
+                    <p className="text-xs text-gray-500 mb-1.5">Verified links</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {profile.yc_batch && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-orange-500/10 text-orange-300 border border-orange-500/20 font-medium">
+                          YC {profile.yc_batch}
+                        </span>
+                      )}
+                      {hasDeck && (
+                        <button onClick={() => setTab('deck')} className="text-xs px-2 py-0.5 rounded-full bg-white/5 text-gray-300 border border-white/15 hover:bg-white/10 transition-all">
+                          Deck ↗
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Copy Blurb */}
               <div className="px-4 pb-4">
                 <button
                   onClick={copyBlurb}
@@ -485,7 +593,6 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
               </div>
             </div>
 
-            {/* Request Intro CTA */}
             {!isOwner && (
               <Link
                 href="/connectors"
@@ -494,32 +601,10 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                 Request Intro via Connector
               </Link>
             )}
-
-            {/* Notion status badge (if snapshot exists) */}
-            {snapshot && (
-              <button
-                onClick={() => setTab('snapshot')}
-                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-left"
-              >
-                <div className="w-6 h-6 rounded bg-white flex items-center justify-center flex-shrink-0">
-                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                    <path d="M4.459 4.208c.746.606 1.026.56 2.428.469l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466L4.459 4.208zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.934zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.14c-.093-.514.28-.887.747-.933l3.222-.187z" fill="currentColor"/>
-                  </svg>
-                </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-medium text-white truncate">Notion snapshot</p>
-                  <p className="text-xs text-gray-500">{timeAgo(snapshot.synced_at)}</p>
-                </div>
-                <svg className="w-4 h-4 text-gray-600 ml-auto flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            )}
           </div>
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-white/10 py-8 px-6 mt-10">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-600">
           <Link href="/" className="font-semibold text-gray-400 hover:text-white transition-colors">Warmchain</Link>
