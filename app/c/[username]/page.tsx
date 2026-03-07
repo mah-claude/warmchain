@@ -8,8 +8,8 @@ import { ConnectorProfile, HELPS_WITH_OPTIONS, ASK_TYPE_OPTIONS, TIMELINE_OPTION
 
 function Tag({ label, variant = 'default' }: { label: string; variant?: 'default' | 'green' }) {
   return variant === 'green'
-    ? <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">{label}</span>
-    : <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">{label}</span>
+    ? <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">{label}</span>
+    : <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-white/5 text-gray-400 border border-white/10">{label}</span>
 }
 
 function ConnectorProfileInner({ username }: { username: string }) {
@@ -223,18 +223,18 @@ function ConnectorProfileInner({ username }: { username: string }) {
   }
 
   if (loading) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+    <div className="min-h-screen bg-black flex items-center justify-center">
       <div className="w-10 h-10 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
     </div>
   )
 
   if (!profile) return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-6">
+    <div className="min-h-screen bg-black flex items-center justify-center px-6">
       <div className="text-center max-w-sm">
         <div className="text-5xl mb-4">🔍</div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">Connector not found</h1>
-        <p className="text-gray-500 mb-6">No connector at <span className="font-mono text-gray-800">/c/{username}</span></p>
-        <Link href="/connectors" className="px-6 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-colors">Browse connectors</Link>
+        <h1 className="text-3xl font-bold text-white mb-3">Connector not found</h1>
+        <p className="text-gray-500 mb-6">No connector at <span className="font-mono text-gray-400">/c/{username}</span></p>
+        <Link href="/connectors" className="px-6 py-3 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-colors">Browse connectors</Link>
       </div>
     </div>
   )
@@ -254,23 +254,23 @@ function ConnectorProfileInner({ username }: { username: string }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className="min-h-screen bg-black text-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       {/* Owner banner */}
       {isOwner && (
-        <div className="bg-emerald-50 border-b border-emerald-200 px-4 py-2.5">
+        <div className="bg-emerald-950/80 border-b border-emerald-800/50 px-4 py-2.5">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-4 text-sm">
-            <span className="text-emerald-700 font-medium">
+            <span className="text-emerald-400 font-medium text-xs">
               👁 This is how founders see your profile
             </span>
             <div className="flex items-center gap-3">
-              <Link href="/connector-builder" className="text-emerald-600 hover:text-emerald-700 transition-colors underline underline-offset-2 text-xs">
+              <Link href="/connector-builder" className="text-emerald-500 hover:text-emerald-400 transition-colors underline underline-offset-2 text-xs">
                 Edit profile
               </Link>
-              <Link href="/dashboard" className="px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-lg hover:bg-emerald-600 transition-all">
+              <Link href="/dashboard" className="px-3 py-1 bg-emerald-500 text-black text-xs font-bold rounded-lg hover:bg-emerald-400 transition-all">
                 {unreadCount > 0 ? `Inbox (${unreadCount})` : 'Dashboard'}
               </Link>
             </div>
@@ -417,33 +417,33 @@ function ConnectorProfileInner({ username }: { username: string }) {
       )}
 
       {/* Nav */}
-      <nav className="border-b border-gray-200 bg-white sticky top-0 z-40 shadow-sm">
+      <nav className="border-b border-white/10 bg-black/80 backdrop-blur-md sticky top-0 z-40">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
-          <Link href="/" className="text-lg font-semibold text-gray-900 hover:text-emerald-600 transition-colors">Warmchain</Link>
+          <Link href="/" className="text-lg font-semibold text-white hover:text-emerald-400 transition-colors">Warmchain</Link>
           <div className="flex items-center gap-2 sm:gap-3">
             {isOwner ? (
               <>
-                <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors hidden sm:flex">
+                <Link href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors hidden sm:flex">
                   ← Dashboard
                   {unreadCount > 0 && (
-                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-white text-xs font-bold">
+                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-500 text-black text-xs font-bold">
                       {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                   )}
                 </Link>
-                <Link href="/connector-builder" className="px-4 py-2 bg-gray-100 border border-gray-200 text-gray-700 text-xs sm:text-sm font-medium rounded-full hover:bg-gray-200 transition-all">
+                <Link href="/connector-builder" className="px-4 py-2 bg-white/10 border border-white/20 text-white text-xs sm:text-sm font-medium rounded-full hover:bg-white/15 transition-all">
                   Edit Profile
                 </Link>
               </>
             ) : (
               <>
-                <button onClick={copyLink} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors px-3 py-1.5 rounded-lg hover:bg-gray-100">
+                <button onClick={copyLink} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-white transition-colors px-3 py-1.5 rounded-lg hover:bg-white/5">
                   {copied
-                    ? <><svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-600 text-xs font-medium">Copied!</span></>
+                    ? <><svg className="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg><span className="text-emerald-400 text-xs font-medium">Copied!</span></>
                     : <span className="text-xs">Share</span>
                   }
                 </button>
-                <Link href="/connectors" className="text-xs text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">← All connectors</Link>
+                <Link href="/connectors" className="text-xs text-gray-500 hover:text-white transition-colors hidden sm:block">← All connectors</Link>
               </>
             )}
           </div>
@@ -452,19 +452,19 @@ function ConnectorProfileInner({ username }: { username: string }) {
 
       <main className="max-w-3xl mx-auto px-4 sm:px-6 py-10 sm:py-12">
         {/* Header */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 mb-5">
+        <div className="bg-white/5 rounded-2xl border border-white/10 p-6 sm:p-8 mb-5">
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-6">
             <div className="flex items-start gap-4">
               <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-2xl sm:text-3xl font-bold text-white flex-shrink-0">
                 {profile.name.charAt(0)}
               </div>
               <div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-700 text-xs font-medium mb-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-xs font-medium mb-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   Connector
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-1">{profile.name}</h1>
-                <p className="text-gray-500 leading-relaxed">{profile.bio}</p>
+                <h1 className="text-3xl sm:text-4xl font-bold text-white mb-1">{profile.name}</h1>
+                <p className="text-gray-400 leading-relaxed">{profile.bio}</p>
               </div>
             </div>
 
@@ -472,13 +472,13 @@ function ConnectorProfileInner({ username }: { username: string }) {
             {!isOwner && (
               <div className="flex-shrink-0">
                 {alreadyRequested ? (
-                  <div className="px-4 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 text-sm font-medium">
+                  <div className="px-4 py-2.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-emerald-400 text-sm font-medium">
                     ✓ Request sent
                   </div>
                 ) : (
                   <button
                     onClick={handleRequestClick}
-                    className="px-5 py-2.5 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all text-sm w-full sm:w-auto shadow-sm"
+                    className="px-5 py-2.5 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-all text-sm w-full sm:w-auto"
                   >
                     Request Intro
                   </button>
@@ -489,38 +489,38 @@ function ConnectorProfileInner({ username }: { username: string }) {
         </div>
 
         <div className="grid sm:grid-cols-2 gap-4 mb-4">
-          <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
-            <h2 className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-3">Expertise</h2>
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+            <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Expertise</h2>
             <div className="flex flex-wrap gap-2">
               {expertiseTags.length > 0
                 ? expertiseTags.map(tag => <Tag key={tag} label={tag} variant="green" />)
-                : <p className="text-gray-400 text-sm">Not specified</p>}
+                : <p className="text-gray-600 text-sm">Not specified</p>}
             </div>
           </div>
-          <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm">
-            <h2 className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-3">I Help With</h2>
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/10">
+            <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">I Help With</h2>
             <div className="flex flex-wrap gap-2">
               {helpsLabels.length > 0
                 ? helpsLabels.map(label => <Tag key={label} label={label} />)
-                : <p className="text-gray-400 text-sm">Not specified</p>}
+                : <p className="text-gray-600 text-sm">Not specified</p>}
             </div>
           </div>
         </div>
 
         {profile.portfolio && (
-          <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm mb-4">
-            <h2 className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-3">Track Record</h2>
-            <p className="text-gray-700 leading-relaxed whitespace-pre-line">{profile.portfolio}</p>
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/10 mb-4">
+            <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Track Record</h2>
+            <p className="text-gray-300 leading-relaxed whitespace-pre-line">{profile.portfolio}</p>
           </div>
         )}
 
         {linksArray.length > 0 && (
-          <div className="p-5 rounded-2xl bg-white border border-gray-100 shadow-sm mb-6">
-            <h2 className="text-xs font-semibold text-emerald-600 uppercase tracking-wider mb-3">Connect</h2>
+          <div className="p-5 rounded-2xl bg-white/5 border border-white/10 mb-6">
+            <h2 className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-3">Connect</h2>
             <div className="flex flex-wrap gap-2">
               {linksArray.map(link => (
                 <a key={link} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-50 border border-gray-200 text-sm text-gray-600 hover:text-gray-900 hover:border-gray-300 transition-all">
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-gray-400 hover:text-white hover:border-white/20 transition-all">
                   <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                   </svg>
@@ -533,10 +533,10 @@ function ConnectorProfileInner({ username }: { username: string }) {
 
         {/* CTA for logged-out visitors only */}
         {!isLoggedIn && (
-          <div className="p-8 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-600 text-center shadow-md">
+          <div className="p-8 rounded-2xl bg-gradient-to-br from-emerald-900/60 to-green-900/40 border border-emerald-500/20 text-center">
             <p className="text-xl font-bold text-white mb-2">Want {profile.name.split(' ')[0]}'s help?</p>
-            <p className="text-emerald-100 mb-5 text-sm">Create a founder profile and send a structured intro request in minutes.</p>
-            <Link href="/signup" className="inline-block px-8 py-3 bg-white text-emerald-700 font-bold rounded-xl hover:bg-gray-50 transition-all shadow-sm">
+            <p className="text-gray-400 mb-5 text-sm">Create a founder profile and send a structured intro request in minutes.</p>
+            <Link href="/signup" className="inline-block px-8 py-3 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-all">
               Join as Founder — Free
             </Link>
           </div>
