@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS notion_connections (
 );
 
 ALTER TABLE notion_connections ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS nc_owner ON notion_connections;
 CREATE POLICY nc_owner ON notion_connections FOR ALL USING (user_id = auth.uid());
 CREATE INDEX IF NOT EXISTS idx_nc_user ON notion_connections(user_id);
 
@@ -36,10 +37,23 @@ CREATE TABLE IF NOT EXISTS notion_snapshots (
 );
 
 ALTER TABLE notion_snapshots ENABLE ROW LEVEL SECURITY;
--- Current snapshots are publicly readable (profile content)
-CREATE POLICY ns_public_read ON notion_snapshots FOR SELECT USING (is_current = true);
--- Owner can do everything
-CREATE POLICY ns_owner_all   ON notion_snapshots FOR ALL   USING (user_id = auth.uid());
+
+-- Public read: only current snapshots where the founder has opted in via notion_enabled.
+-- This prevents leaking content for founders who haven't explicitly published their snapshot.
+-- The owner_all policy below lets the founder view/manage their own snapshots regardless.
+DROP POLICY IF EXISTS ns_public_read ON notion_snapshots;
+CREATE POLICY ns_public_read ON notion_snapshots FOR SELECT USING (
+  is_current = true
+  AND (
+    SELECT notion_enabled FROM profiles WHERE user_id = notion_snapshots.user_id
+  ) = true
+);
+
+-- Owner can read/write all their own snapshots (including non-current history).
+-- Server-side sync uses service_role which bypasses RLS; this policy covers
+-- direct Supabase client calls from the browser (e.g., /f/[username] page for owner preview).
+DROP POLICY IF EXISTS ns_owner_all ON notion_snapshots;
+CREATE POLICY ns_owner_all ON notion_snapshots FOR ALL USING (user_id = auth.uid());
 
 CREATE INDEX IF NOT EXISTS idx_ns_username ON notion_snapshots(founder_username, is_current);
 CREATE INDEX IF NOT EXISTS idx_ns_user     ON notion_snapshots(user_id, is_current);
@@ -51,3 +65,6 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS notion_enabled boolean DEFAULT fal
 -- (uses existing page_analytics table with event column)
 -- Events: notion_connected, notion_page_selected, notion_sync_success,
 --         notion_sync_fail, snapshot_viewed, github_updates_viewed
+
+-- Performance: ordering snapshots by version for latest-version lookup during sync
+CREATE INDEX IF NOT EXISTS idx_ns_user_version ON notion_snapshots(user_id, version DESC);

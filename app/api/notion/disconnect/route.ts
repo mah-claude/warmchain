@@ -14,10 +14,16 @@ export async function DELETE(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser(token)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  // Mark all snapshots as not current (preserve history but hide from public)
+  // Mark all snapshots as not current (hides from public via RLS)
   await supabase
     .from('notion_snapshots')
     .update({ is_current: false })
+    .eq('user_id', user.id)
+
+  // Remove public visibility — no snapshots should show on profile after disconnect
+  await supabase
+    .from('profiles')
+    .update({ notion_enabled: false })
     .eq('user_id', user.id)
 
   // Delete connection (token revoked on Notion's side automatically after 30 days of disuse)

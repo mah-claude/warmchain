@@ -534,7 +534,7 @@ function ConnectorProfileInner({ username }: { username: string }) {
         {/* CTA for logged-out visitors only */}
         {!isLoggedIn && (
           <div className="p-8 rounded-2xl bg-gradient-to-br from-emerald-900/60 to-green-900/40 border border-emerald-500/20 text-center">
-            <p className="text-xl font-bold text-white mb-2">Want {profile.name.split(' ')[0]}'s help?</p>
+            <p className="text-xl font-bold text-white mb-2">Want {profile.name.split(' ')[0]}&apos;s help?</p>
             <p className="text-gray-400 mb-5 text-sm">Create a founder profile and send a structured intro request in minutes.</p>
             <Link href="/signup" className="inline-block px-8 py-3 bg-emerald-500 text-black font-bold rounded-xl hover:bg-emerald-400 transition-all">
               Join as Founder — Free

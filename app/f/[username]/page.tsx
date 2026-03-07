@@ -1,8 +1,7 @@
 'use client'
 
-import { useEffect, useState, use, useRef } from 'react'
+import { useEffect, useState, use } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import { NEEDS_OPTIONS } from '@/lib/types'
 
@@ -33,6 +32,13 @@ type NotionSnapshot = {
 
 type Tab = 'overview' | 'snapshot' | 'updates' | 'ask'
 
+function timeAgo(iso: string): string {
+  const d = (Date.now() - new Date(iso).getTime()) / 1000
+  if (d < 3600) return `${Math.floor(d / 60)}m ago`
+  if (d < 86400) return `${Math.floor(d / 3600)}h ago`
+  return `${Math.floor(d / 86400)}d ago`
+}
+
 function MetricChip({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col items-center px-4 py-2.5 rounded-xl bg-white/5 border border-white/10">
@@ -61,7 +67,6 @@ function TabBtn({ label, active, onClick, badge }: { label: string; active: bool
 
 export default function FounderPublicProfile({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params)
-  const router = useRouter()
 
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -161,13 +166,6 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
     navigator.clipboard.writeText(blurb)
     setBlurbCopied(true)
     setTimeout(() => setBlurbCopied(false), 2000)
-  }
-
-  const timeAgo = (iso: string) => {
-    const d = (Date.now() - new Date(iso).getTime()) / 1000
-    if (d < 3600) return `${Math.floor(d / 60)}m ago`
-    if (d < 86400) return `${Math.floor(d / 3600)}h ago`
-    return `${Math.floor(d / 86400)}d ago`
   }
 
   if (loading) return (
@@ -362,7 +360,7 @@ export default function FounderPublicProfile({ params }: { params: Promise<{ use
                         </Link>
                       </>
                     ) : (
-                      <p className="text-gray-600 text-xs">This founder hasn't connected a Notion page yet.</p>
+                      <p className="text-gray-600 text-xs">This founder hasn&apos;t connected a Notion page yet.</p>
                     )}
                   </div>
                 )}

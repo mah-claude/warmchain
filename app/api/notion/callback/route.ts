@@ -18,10 +18,33 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${redirectBase}?error=missing_params`)
   }
 
-  // Decode state to get userId
+  // ── CSRF nonce validation ────────────────────────────────────────────────
+  // The connect route stores a nonce in an httpOnly cookie and embeds it in
+  // state as "<base64url(userId)>|<nonce>". We verify the nonce matches the
+  // cookie to prevent an attacker from crafting a callback URL with a
+  // victim's userId and connecting their own Notion account to the victim.
+  const cookieNonce = req.cookies.get('notion_oauth_nonce')?.value
+  if (!cookieNonce) {
+    return NextResponse.redirect(`${redirectBase}?error=invalid_state`)
+  }
+
+  // Parse state: "<base64url(userId)>|<nonce>"
+  const pipeIdx = state.indexOf('|')
+  if (pipeIdx < 0) {
+    return NextResponse.redirect(`${redirectBase}?error=invalid_state`)
+  }
+  const encodedUserId = state.slice(0, pipeIdx)
+  const stateNonce = state.slice(pipeIdx + 1)
+
+  // Constant-time comparison to prevent timing attacks
+  if (!stateNonce || stateNonce !== cookieNonce) {
+    return NextResponse.redirect(`${redirectBase}?error=invalid_state`)
+  }
+
+  // Decode userId
   let userId: string
   try {
-    userId = Buffer.from(state, 'base64url').toString()
+    userId = Buffer.from(encodedUserId, 'base64url').toString()
     if (!userId || userId.length < 10) throw new Error('invalid')
   } catch {
     return NextResponse.redirect(`${redirectBase}?error=invalid_state`)
@@ -32,7 +55,7 @@ export async function GET(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
   )
 
-  // Verify user exists
+  // Verify user exists in our database
   const { data: { user } } = await supabase.auth.admin.getUserById(userId)
   if (!user) {
     return NextResponse.redirect(`${redirectBase}?error=user_not_found`)
@@ -57,7 +80,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(`${redirectBase}?error=db_error`)
     }
 
-    return NextResponse.redirect(`${redirectBase}?connected=1`)
+    // Clear the nonce cookie after successful use (one-time use)
+    const successResponse = NextResponse.redirect(`${redirectBase}?connected=1`)
+    successResponse.cookies.set('notion_oauth_nonce', '', { maxAge: 0, path: '/' })
+    return successResponse
   } catch (err) {
     console.error('Notion callback error:', err)
     return NextResponse.redirect(`${redirectBase}?error=exchange_failed`)

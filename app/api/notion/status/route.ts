@@ -14,13 +14,24 @@ export async function GET(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser(token)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { data: conn } = await supabase
-    .from('notion_connections')
-    .select('workspace_name, workspace_icon, selected_page_id, selected_page_title, last_synced_at, sync_error')
-    .eq('user_id', user.id)
-    .single()
+  const [connResult, profileResult] = await Promise.all([
+    supabase
+      .from('notion_connections')
+      .select('workspace_name, workspace_icon, selected_page_id, selected_page_title, last_synced_at, sync_error')
+      .eq('user_id', user.id)
+      .single(),
+    supabase
+      .from('profiles')
+      .select('notion_enabled')
+      .eq('user_id', user.id)
+      .single(),
+  ])
 
-  if (!conn) return NextResponse.json({ connected: false })
+  if (!connResult.data) return NextResponse.json({ connected: false })
 
-  return NextResponse.json({ connected: true, connection: conn })
+  return NextResponse.json({
+    connected: true,
+    connection: connResult.data,
+    notion_enabled: profileResult.data?.notion_enabled ?? false,
+  })
 }

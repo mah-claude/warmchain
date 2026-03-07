@@ -40,6 +40,8 @@ function IntegrationsInner() {
   const [error, setError] = useState<string | null>(null)
   const [successBanner, setSuccessBanner] = useState<string | null>(null)
   const [retryAfter, setRetryAfter] = useState<number | null>(null)
+  const [notionEnabled, setNotionEnabled] = useState(false)
+  const [togglingVisibility, setTogglingVisibility] = useState(false)
 
   // Auth + initial load
   useEffect(() => {
@@ -64,6 +66,7 @@ function IntegrationsInner() {
         if (data.connected) {
           setConn(data.connection)
           setSelectedPageId(data.connection.selected_page_id ?? '')
+          setNotionEnabled(data.notion_enabled ?? false)
         }
       }
       setLoadingConn(false)
@@ -132,6 +135,22 @@ function IntegrationsInner() {
       body: JSON.stringify({ page_id: pageId, page_title: page?.title ?? '' }),
     })
     setConn(prev => prev ? { ...prev, selected_page_id: pageId, selected_page_title: page?.title ?? null } : prev)
+  }
+
+  const handleToggleVisibility = async () => {
+    if (!token) return
+    setTogglingVisibility(true)
+    const newVal = !notionEnabled
+    try {
+      const supabase = createClient()
+      await supabase.from('profiles').update({ notion_enabled: newVal }).eq('user_id', (await supabase.auth.getUser()).data.user!.id)
+      setNotionEnabled(newVal)
+      setSuccessBanner(newVal ? 'Snapshot now visible on your public profile.' : 'Snapshot hidden from your public profile.')
+    } catch {
+      setError('Failed to update visibility')
+    } finally {
+      setTogglingVisibility(false)
+    }
   }
 
   const handleDisconnect = async () => {
@@ -249,6 +268,7 @@ function IntegrationsInner() {
                 {conn.workspace_name && (
                   <div className="flex items-center gap-2 text-sm">
                     {conn.workspace_icon && (
+                      // eslint-disable-next-line @next/next/no-img-element
                       <img src={conn.workspace_icon} alt="" className="w-5 h-5 rounded" />
                     )}
                     <span className="text-gray-300">Workspace:</span>
@@ -315,7 +335,28 @@ function IntegrationsInner() {
                     <svg className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
-                    Synced "{syncResult.page_title}" — {syncResult.word_count} words
+                    Synced &ldquo;{syncResult.page_title}&rdquo; — {syncResult.word_count} words
+                  </div>
+                )}
+
+                {/* Public visibility toggle */}
+                {conn.last_synced_at && (
+                  <div className="flex items-center justify-between py-3 border-t border-white/10">
+                    <div>
+                      <p className="text-sm font-medium text-white">Show on public profile</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        {notionEnabled ? 'Snapshot is visible to anyone viewing your profile.' : 'Snapshot is hidden — only you can see it.'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleToggleVisibility}
+                      disabled={togglingVisibility}
+                      className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 ${notionEnabled ? 'bg-emerald-500' : 'bg-white/15'}`}
+                      role="switch"
+                      aria-checked={notionEnabled}
+                    >
+                      <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${notionEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
                   </div>
                 )}
 

@@ -105,6 +105,13 @@ export async function POST(req: NextRequest) {
     }
     await supabase.from('notion_connections').update(updateData).eq('user_id', user.id)
 
+    // Enable public visibility on first successful sync (opt-in by action).
+    // Founders can disable via settings later; syncing implies intent to share.
+    await supabase
+      .from('profiles')
+      .update({ notion_enabled: true })
+      .eq('user_id', user.id)
+
     return NextResponse.json({ ok: true, version: nextVersion, page_title, word_count, synced_at: new Date().toISOString() })
   } catch (err) {
     console.error('Notion sync error:', err)
